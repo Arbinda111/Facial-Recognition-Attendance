@@ -1,32 +1,34 @@
-# Facial Recognition Attendance System
+# FullAttend – Facial Recognition Attendance System
 
-This project is a facial recognition-based attendance system for CIHE students. It aims to automate attendance tracking using computer vision and facial recognition technology.
-
-## Features
-- Facial recognition login for students
-- Attendance marking system
-- Admin panel to manage students and view attendance records
-- Real-time recognition using webcam
-- Database integration
-
-## Technologies
-- Python
-- OpenCV
-- SQLite / Firebase / MySQL (TBD)
-- Django (TBD)
+This is a student attendance management system using real-time facial recognition built for CIHE.
 
 ## Team Members
-- Arbinda Dangi
-- Sudip Sharma
-- Kashish
-- Jamdrel
-- Karma
+- Arbinda Dangi (Frontend) 
+- Kashish Karmacharya (Facial Recognition) 
+- Karma Loday (Database) 
+- Sudip Sharma (Backend)
+- Jamdrel Thaye (AI Integration & Testing)
 
-## Usage
-1. Clone the repository
-2. Set up virtual environment
-3. Install requirements
-4. Run the app
+## Technologies Used
+- Python (Django)
+- OpenCV + face_recognition
+- MySQL
+- HTML/CSS/JS (Bootstrap)
+- VS Code (Windows)
+- XAMPP (MySQL + Apache)
 
-## License
-MIT (or your preferred license)
+## Project Structure
+- `frontend/`: UI pages (login, dashboards)
+- `backend/`: Django project and API
+- `facial_recognition/`: Python scripts for training & detection
+- `database/`: SQL schema & ERD
+- `media/`: Student images (training/testing)
+
+## Features
+- Real-time webcam-based facial recognition
+- Automatic attendance logging
+- Admin dashboard with student/class reports
+- Secure student login
+
+##  Setup Instructions
+1. Clone this repo:
