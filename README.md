@@ -30,5 +30,3 @@ This is a student attendance management system using real-time facial recognitio
 - Admin dashboard with student/class reports
 - Secure student login
 
-##  Setup Instructions
-1. Clone this repo:
