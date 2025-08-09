@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Project Reports</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2>FULL ATTEND</h2>
+      <nav>
+        <a href="admin_dashboard.html">Dashboard</a>
+        <a href="class_management.html">Class Management</a>
+        <a href="student_directory.html">Student Directory</a>
+        <a href="project_reports.html" class="active">Reports</a>
+        <a href="timetable.html">Time Table</a>
+        <a href="settings.html">Settings</a>
+        <a href="login.html">Logout</a>
+      </nav>
+      <div class="logos">
+        <img src="images/cihe_logo.png" alt="CIHE Logo"/>
+        <img src="images/fullattend_logo.png" alt="FullAttend Logo"/>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="dashboard-content">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div>
+          <h1>Project 1 Reports</h1>
+          <p class="muted">Attendance summaries and scan results</p>
+        </div>
+        <div class="toolbar">
+          <a class="btn" href="#">Export CSV</a>
+          <a class="btn" href="#">Download PDF</a>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="toolbar" style="margin-top:14px;">
+        <input class="search" type="search" placeholder="Search class, topic, date…"/>
+        <select class="class-selector">
+          <option>All Classes</option>
+          <option>Class 101</option>
+          <option>Class 102</option>
+          <option>Class 103</option>
+          <option>Class 104</option>
+        </select>
+        <select class="class-selector">
+          <option>Any Status</option>
+          <option>Complete</option>
+          <option>In Progress</option>
+          <option>Not Yet</option>
+        </select>
+        <input type="date" class="search"/>
+        <input type="date" class="search"/>
+      </div>
+
+      <!-- Summary cards -->
+      <div class="class-cards" style="margin-top:16px;">
+        <div class="card">
+          <h3>Total Sessions</h3>
+          <p class="muted">This term</p>
+          <h2>12</h2>
+        </div>
+        <div class="card">
+          <h3>Total Present</h3>
+          <p class="muted">Across all classes</p>
+          <h2>284</h2>
+        </div>
+        <div class="card">
+          <h3>Total Absent</h3>
+          <p class="muted">Across all classes</p>
+          <h2>61</h2>
+        </div>
+        <div class="card">
+          <h3>Late Arrivals</h3>
+          <p class="muted">Across all classes</p>
+          <h2>18</h2>
+        </div>
+      </div>
+
+      <!-- Reports table -->
+      <section class="scanning-status" style="margin-top:18px;">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Class</th>
+              <th>Topic</th>
+              <th>Present</th>
+              <th>Absent</th>
+              <th>Status</th>
+              <th>Report</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2025-05-10</td>
+              <td>Class 101</td>
+              <td>Project 1 – Sprint Review</td>
+              <td>28</td>
+              <td>12</td>
+              <td>Complete</td>
+              <td><a class="btn" href="#">View</a></td>
+            </tr>
+            <tr>
+              <td>2025-05-12</td>
+              <td>Class 102</td>
+              <td>Mobile Application Intro</td>
+              <td>30</td>
+              <td>10</td>
+              <td>In Progress</td>
+              <td><a class="btn" href="#">View</a></td>
+            </tr>
+            <tr>
+              <td>2025-05-15</td>
+              <td>Class 103</td>
+              <td>Business Ethics Case</td>
+              <td>26</td>
+              <td>14</td>
+              <td>Complete</td>
+              <td><a class="btn" href="#">View</a></td>
+            </tr>
+            <tr>
+              <td>2025-05-18</td>
+              <td>Class 104</td>
+              <td>Algorithms & DS</td>
+              <td>20</td>
+              <td>20</td>
+              <td>Not Yet</td>
+              <td><a class="btn" href="#">View</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Directory</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2>FULL ATTEND</h2>
+      <nav>
+        <a href="admin_dashboard.html">Dashboard</a>
+        <a href="class_management.html">Class Management</a>
+        <a href="student_directory.html" class="active">Student Directory</a>
+        <a href="project_reports.html">Reports</a>
+        <a href="timetable.html">Time Table</a>
+        <a href="settings.html">Settings</a>
+        <a href="login.html">Logout</a>
+        
+      </nav>
+      <div class="logos">
+        <img src="images/cihe_logo.png" alt="CIHE Logo"/>
+        <img src="images/fullattend_logo.png" alt="FullAttend Logo"/>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="dashboard-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div>
+          <h1>Student Directory</h1>
+          <p class="muted">Search students and view details</p>
+        </div>
+
+        <div class="toolbar">
+          <input id="searchInput" class="search" type="search" placeholder="Search name, ID, email…"/>
+          <select id="classFilter" class="class-selector">
+            <option value="">All Classes</option>
+            <option>Class 101</option>
+            <option>Class 102</option>
+            <option>Class 103</option>
+            <option>Class 104</option>
+          </select>
+          <a class="btn" href="add_student.html">Add Student</a>
+
+        </div>
+      </div>
+
+      <section class="scanning-status" style="margin-top:16px;">
+        <table class="table" id="directoryTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Student ID</th>
+              <th>Class</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Row 1 -->
+            <tr>
+              <td>
+                <div class="student-name">
+                  <span class="avatar">AL</span> <span class="name">Alice Lam</span>
+                </div>
+              </td>
+              <td class="sid">CIHE240001</td>
+              <td class="cls">Class 101</td>
+              <td class="email">alice.lam@example.edu</td>
+              <td><span class="pill"><span class="status-dot present"></span> Active</span></td>
+              <td><a class="btn" href="#">View</a></td>
+            </tr>
+            <!-- Row 2 -->
+            <tr>
+              <td>
+                <div class="student-name">
+                  <span class="avatar">BK</span> <span class="name">Ben Kumar</span>
+                </div>
+              </td>
+              <td class="sid">CIHE240045</td>
+              <td class="cls">Class 102</td>
+              <td class="email">ben.kumar@example.edu</td>
+              <td><span class="pill"><span class="status-dot absent"></span> Inactive</span></td>
+              <td><a class="btn" href="#">View</a></td>
+            </tr>
+            <!-- Row 3 -->
+            <tr>
+              <td>
+                <div class="student-name">
+                  <span class="avatar">CS</span> <span class="name">Chloe Singh</span>
+                </div>
+              </td>
+              <td class="sid">CIHE240078</td>
+              <td class="cls">Class 103</td>
+              <td class="email">chloe.singh@example.edu</td>
+              <td><span class="pill"><span class="status-dot present"></span> Active</span></td>
+              <td><a class="btn" href="#">View</a></td>
+            </tr>
+            <!-- Row 4 -->
+            <tr>
+              <td>
+                <div class="student-name">
+                  <span class="avatar">DL</span> <span class="name">Dylan Li</span>
+                </div>
+              </td>
+              <td class="sid">CIHE240102</td>
+              <td class="cls">Class 104</td>
+              <td class="email">dylan.li@example.edu</td>
+              <td><span class="pill"><span class="status-dot late"></span> Pending</span></td>
+              <td><a class="btn" href="#">View</a></td>
+            </tr>
+            <!-- Row 5 -->
+            <tr>
+              <td>
+                <div class="student-name">
+                  <span class="avatar">EM</span> <span class="name">Ella Moore</span>
+                </div>
+              </td>
+              <td class="sid">CIHE240126</td>
+              <td class="cls">Class 101</td>
+              <td class="email">ella.moore@example.edu</td>
+              <td><span class="pill"><span class="status-dot present"></span> Active</span></td>
+              <td><a class="btn" href="#">View</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <!-- Optional: tiny JS for live search + class filter -->
+  <script>
+    const search = document.getElementById('searchInput');
+    const filter = document.getElementById('classFilter');
+    const rows = [...document.querySelectorAll('#directoryTable tbody tr')];
+
+    function applyFilters() {
+      const q = (search.value || '').toLowerCase();
+      const cls = filter.value;
+
+      rows.forEach(tr => {
+        const name = tr.querySelector('.name')?.textContent.toLowerCase() || '';
+        const sid  = tr.querySelector('.sid')?.textContent.toLowerCase() || '';
+        const em   = tr.querySelector('.email')?.textContent.toLowerCase() || '';
+        const c    = tr.querySelector('.cls')?.textContent || '';
+
+        const matchesText = !q || name.includes(q) || sid.includes(q) || em.includes(q);
+        const matchesClass = !cls || c === cls;
+
+        tr.style.display = (matchesText && matchesClass) ? '' : 'none';
+      });
+    }
+
+    search.addEventListener('input', applyFilters);
+    filter.addEventListener('change', applyFilters);
+  </script>
+</body>
+</html>
