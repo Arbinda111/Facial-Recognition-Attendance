@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Class Management</title>
+<link rel="stylesheet" href="styles.css">
+
+
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div>
+        <h2>FULL ATTEND</h2>
+        <a class="nav-link" href="#"><i class="fa fa-chart-pie"></i> Dashboard</a>
+        <a class="nav-link active" href="#"><i class="fa fa-play-circle"></i> Class Management</a>
+        <a class="nav-link" href="#"><i class="fa fa-users"></i> Student Directory</a>
+        <a class="nav-link" href="#"><i class="fa fa-file-alt"></i> Reports</a>
+        <a class="nav-link" href="#"><i class="fa fa-calendar"></i> Time Table</a>
+        <a class="nav-link" href="#"><i class="fa fa-cog"></i> Settings</a>
+        <a class="nav-link" href="#"><i class="fa fa-sign-out-alt"></i> Logout</a>
+      </div>
+      <div class="logo-section">
+        <img src="media/cihelogo.png" alt="CIHE Logo">
+        <img src="media/FullAttend_Logo.png" alt="FullAttend Logo">
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="class-header">
+        <div>
+          <h3>Class Management</h3>
+          <h2>Project 1<br><small>Present Students</small></h2>
+        </div>
+        <div>
+          <span class="status-label">Class in progress</span>
+          <div style="margin-top: 10px;">10 May 2025 &nbsp;&nbsp; 10:00 am</div>
+        </div>
+        <div>
+          <label for="class-select">Select Class</label><br>
+          <select id="class-select" class="class-selector">
+            <option>Class 102</option>
+            <option>Class 101</option>
+            <option>Class 103</option>
+            <option>Class 104</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="student-list">
+        <div class="students">
+          <div class="student"><div class="student-name"><span class="avatar">A</span>Arbind Dangi</div><span class="status-dot present"></span></div>
+          <div class="student"><div class="student-name"><span class="avatar">A</span>Elon Musk</div><span class="status-dot absent"></span></div>
+          <div class="student"><div class="student-name"><span class="avatar">A</span>Jeff Bezos</div><span class="status-dot late"></span></div>
+          <div class="student"><div class="student-name"><span class="avatar">A</span>Donald J Trump</div><span class="status-dot absent"></span></div>
+          <div class="student"><div class="student-name"><span class="avatar">A</span>Kim Jong Un</div><span class="status-dot present"></span></div>
+          <div class="student"><div class="student-name"><span class="avatar">A</span>Vladimir Putin</div><span class="status-dot present"></span></div>
+          <div class="student"><div class="student-name"><span class="avatar">A</span>Xi Jin Ping</div><span class="status-dot present"></span></div>
+          <div class="student"><div class="student-name"><span class="avatar">A</span>Narendra Modi</div><span class="status-dot present"></span></div>
+        </div>
+        <div class="class-image">
+          <img src="media/classroom.jpg" alt="Classroom Image">
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><span class="status-dot present"></span> Present</div>
+        <div class="legend-item"><span class="status-dot absent"></span> Absent</div>
+        <div class="legend-item"><span class="status-dot late"></span> Late</div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
