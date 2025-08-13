@@ -6,7 +6,7 @@ const AdminLogin = () => {
   return (
     <div className="centered-container">
       <div className="card">
-        <img src="/fullattend-logo.svg" alt="FullAttend Logo" className="logo" />
+        <img src="/fullattend-logo.png" alt="FullAttend Logo" className="logo" />
         <h2 className="title" style={{ textAlign: 'center', marginBottom: 16 }}>Admin Login</h2>
         <form
           onSubmit={e => {

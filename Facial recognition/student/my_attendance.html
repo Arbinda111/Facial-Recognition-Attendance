@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Attendance</title>
+  <!-- shared base + student skin (Option B paths) -->
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="student.css">
+</head>
+<body class="student-portal">
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2>STUDENT PANEL</h2>
+      <nav>
+        <a href="student_dashboard.html">Dashboard</a>
+        <a href="my_attendance.html" class="active">My Attendance</a>
+        <a href="student_timetable.html">Timetable</a>
+        <a href="settings.html">Settings</a>
+        <a href="../login.html">Logout</a>
+      </nav>
+      <div class="logos">
+        <img src="../images/cihe_logo.png" alt="CIHE Logo">
+        <img src="../images/fullattend_logo.png" alt="FullAttend Logo">
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="dashboard-content">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <div>
+          <h1>My Attendance</h1>
+          <p class="muted">See your attendance by class and session.</p>
+        </div>
+        <div class="toolbar">
+          <a class="btn" id="btnCsv" href="#">Export CSV</a>
+          <a class="btn" id="btnPrint" href="#">Print / PDF</a>
+        </div>
+      </div>
+
+      <!-- KPI / Progress -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <h4>Overall Attendance</h4>
+          <div class="kpi-value">90%</div>
+        </div>
+        <div class="kpi-card">
+          <h4>Present</h4>
+          <div class="kpi-value">56</div>
+        </div>
+        <div class="kpi-card">
+          <h4>Absent</h4>
+          <div class="kpi-value">17</div>
+        </div>
+        <div class="kpi-card">
+          <h4>Late</h4>
+          <div class="kpi-value">25</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="toolbar" style="margin-top:6px;">
+        <input id="q" class="search" type="search" placeholder="Search by class, topic or date…">
+        <select id="fClass" class="class-selector">
+          <option value="">All Classes</option>
+          <option>Class 101</option>
+          <option>Class 102</option>
+          <option>Class 103</option>
+          <option>Class 104</option>
+        </select>
+        <select id="fStatus" class="class-selector">
+          <option value="">Any Status</option>
+          <option value="present">Present</option>
+          <option value="absent">Absent</option>
+          <option value="late">Late</option>
+        </select>
+        <input id="fromD" type="date" class="search">
+        <input id="toD" type="date" class="search">
+      </div>
+
+      <!-- Legend -->
+      <div class="legend" style="justify-content:flex-start;margin-top:10px;">
+        <div class="legend-item"><span class="status-dot present"></span> Present</div>
+        <div class="legend-item"><span class="status-dot absent"></span> Absent</div>
+        <div class="legend-item"><span class="status-dot late"></span> Late</div>
+      </div>
+
+      <!-- Attendance Table -->
+      <section style="margin-top:12px;">
+        <table class="attendance-table" id="attTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Class</th>
+              <th>Session / Topic</th>
+              <th>Status</th>
+              <th>Check-in</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="c-date">2025-05-10</td>
+              <td class="c-class">Class 101</td>
+              <td>Project 1 – Sprint Review</td>
+              <td class="c-status">
+                <span class="chip present">Present</span>
+              </td>
+              <td>09:02 AM</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td class="c-date">2025-05-12</td>
+              <td class="c-class">Class 102</td>
+              <td>Mobile App – Intro</td>
+              <td class="c-status">
+                <span class="chip late">Late</span>
+              </td>
+              <td>10:08 AM</td>
+              <td>Traffic delay</td>
+            </tr>
+            <tr>
+              <td class="c-date">2025-05-15</td>
+              <td class="c-class">Class 103</td>
+              <td>Business Ethics – Case Study</td>
+              <td class="c-status">
+                <span class="chip present">Present</span>
+              </td>
+              <td>12:01 PM</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td class="c-date">2025-05-18</td>
+              <td class="c-class">Class 104</td>
+              <td>Algorithms & Data Structures</td>
+              <td class="c-status">
+                <span class="chip absent">Absent</span>
+              </td>
+              <td>—</td>
+              <td>Sick leave</td>
+            </tr>
+            <tr>
+              <td class="c-date">2025-05-22</td>
+              <td class="c-class">Class 102</td>
+              <td>Mobile App – UI Components</td>
+              <td class="c-status">
+                <span class="chip present">Present</span>
+              </td>
+              <td>10:00 AM</td>
+              <td>-</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <!-- Lightweight filtering + CSV export -->
+  <script>
+    const q     = document.getElementById('q');
+    const fCls  = document.getElementById('fClass');
+    const fStat = document.getElementById('fStatus');
+    const fFrom = document.getElementById('fromD');
+    const fTo   = document.getElementById('toD');
+    const rows  = [...document.querySelectorAll('#attTable tbody tr')];
+
+    function applyFilters(){
+      const text = (q.value||'').toLowerCase();
+      const cls  = fCls.value;
+      const stat = fStat.value; // present | absent | late
+      const dFrom= fFrom.value ? new Date(fFrom.value) : null;
+      const dTo  = fTo.value   ? new Date(fTo.value)   : null;
+
+      rows.forEach(tr => {
+        const c   = tr.querySelector('.c-class').textContent.trim();
+        const sEl = tr.querySelector('.c-status .chip');
+        const s   = sEl ? sEl.textContent.trim().toLowerCase() : '';
+        const topic = tr.children[2].textContent.toLowerCase();
+        const dateStr = tr.querySelector('.c-date').textContent.trim();
+        const d   = new Date(dateStr);
+
+        const tMatch = !text || topic.includes(text) || c.toLowerCase().includes(text) || dateStr.includes(text);
+        const cMatch = !cls || c === cls;
+        const sMatch = !stat || s === stat;
+        const fMatch = !dFrom || d >= dFrom;
+        const t2Match= !dTo   || d <= dTo;
+
+        tr.style.display = (tMatch && cMatch && sMatch && fMatch && t2Match) ? '' : 'none';
+      });
+    }
+    [q,fCls,fStat,fFrom,fTo].forEach(el => el.addEventListener('input', applyFilters));
+    [fCls,fStat,fFrom,fTo].forEach(el => el.addEventListener('change', applyFilters));
+
+    // CSV export
+    document.getElementById('btnCsv').addEventListener('click', (e)=>{
+      e.preventDefault();
+      const table = document.getElementById('attTable');
+      let csv = [];
+      for(const row of table.querySelectorAll('tr')){
+        const cols = [...row.querySelectorAll('th,td')].map(td =>
+          '"' + td.innerText.replace(/"/g,'""') + '"'
+        );
+        csv.push(cols.join(','));
+      }
+      const blob = new Blob([csv.join('\n')], {type:'text/csv;charset=utf-8;'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'my_attendance.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    // Print / PDF
+    document.getElementById('btnPrint').addEventListener('click', (e)=>{
+      e.preventDefault();
+      window.print();
+    });
+  </script>
+</body>
+</html>
