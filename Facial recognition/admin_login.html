@@ -1,33 +1,34 @@
-<!-- admin_login.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Login</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="container">
-    <a class="back-button" href="login.php">&larr; Back to Main Login</a>
+    <a class="back-button" href="login.html">&larr; Back to Main Login</a>
+
     <div class="login-box">
       <div class="login-logos">
-        <img src="images/cihe_logo.png" alt="CIHE Logo">
-        <img src="images/fullattend_logo.png" alt="FullAttend Logo">
+        <img src="images/cihe_logo.png" alt="CIHE Logo" />
+        <img src="images/fullattend_logo.png" alt="FullAttend Logo" />
       </div>
-      <form action="login.php" method="POST">
+
+      
+      <form action="admin_dashboard.html" method="POST" autocomplete="on" novalidate>
         <div class="input-group">
-          
-          <input type="text" placeholder="Username">
+          <input type="text" name="username" placeholder="Username" required autocomplete="username" />
         </div>
         <div class="input-group">
-          
-          <input type="password" placeholder="Password">
+          <input type="password" name="password" placeholder="Password" required autocomplete="current-password" />
         </div>
         <button type="submit" class="login-button">LOG IN</button>
       </form>
+
       <div class="forgot-password">
-        <a href="forgot_password.html">Forgotten Password?</a>
+        <a href="forgot_passowrd.html">Forgotten Password?</a>
       </div>
     </div>
   </div>

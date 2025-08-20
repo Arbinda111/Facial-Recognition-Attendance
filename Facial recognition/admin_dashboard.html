@@ -1,41 +1,101 @@
-<!-- admin_dashboard.html (structure only) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="dashboard">
+    <!-- Sidebar -->
     <aside class="sidebar">
-      <h2>FULL ATTEND</h2>
-      <nav>
+      <h2 class="brand">FULL ATTEND</h2>
+      <nav class="nav">
         <a href="admin_dashboard.html" class="active">Dashboard</a>
-  <a href="class_management.html" >Class Management</a>
-  <a href="student_directory.html">Student Directory</a>
-  <a href="project_reports.html">Reports</a>
-  <a href="timetable.html">Time Table</a>
-  <a href="settings.html">Settings</a>
-  <a href="login.html">Logout</a>
+        <a href="class_management.html">Class Management</a>
+        <a href="student_directory.html">Student Directory</a>
+        <a href="project_reports.html">Reports</a>
+        <a href="timetable.html">Time Table</a>
+        <a href="settings.html">Settings</a>
+        <a href="login.html">Logout</a>
       </nav>
+
       <div class="logos">
-        <img src="images/cihe_logo.png" alt="CIHE Logo">
-        <img src="images/fullattend_logo.png" alt="FullAttend Logo">
+        <img src="images/cihe_logo.png" alt="CIHE Logo" />
+        <img src="images/fullattend_logo.png" alt="FullAttend Logo" />
       </div>
     </aside>
+
+    <!-- Main -->
     <main class="dashboard-content">
       <h1>Admin Dashboard Semester-1, 2025</h1>
-      <!-- Cards for classes -->
-      <div class="class-cards">
-        <!-- repeat cards for each class here -->
-      </div>
-      <!-- Scanning Status Table -->
-      <section class="scanning-status">
-        <!-- class scanning table here -->
+
+      <!-- KPI Cards -->
+      <section id="kpis" class="kpi-grid" aria-label="Key Performance Indicators">
+        <!-- Total Students -->
+        <article class="kpi-card" role="group" aria-label="Total Students">
+          <header class="kpi-title">Total Students (Semester)</header>
+          <div class="kpi-value" id="kpiTotalStudents">—</div>
+          <div class="kpi-subtext">Enrolled this semester</div>
+        </article>
+
+        <!-- Classes Today / Week -->
+        <article class="kpi-card" role="group" aria-label="Classes Scheduled">
+          <header class="kpi-title">Classes Scheduled</header>
+          <div class="kpi-value">
+            <span id="kpiClassesToday">—</span>
+            <small class="kpi-inline-note">today</small>
+          </div>
+          <div class="kpi-subtext">
+            <span id="kpiClassesWeek">—</span> this week
+          </div>
+        </article>
+
+        <!-- Attendance % Overall + Per Subject -->
+        <article class="kpi-card" role="group" aria-label="Attendance Percentage">
+          <header class="kpi-title">Attendance %</header>
+          <div class="kpi-value" id="kpiAttendanceOverall">—%</div>
+          <div class="kpi-subtext">Overall today</div>
+
+          <div class="kpi-select">
+            <label for="kpiSubjectSelect">Per subject:</label>
+            <select id="kpiSubjectSelect" name="subject">
+              <option value="" selected disabled>Select subject</option>
+              <!-- Fill with PHP/JS options -->
+              <!-- <option value="ICT307">ICT307</option> -->
+            </select>
+            <span class="kpi-chip" id="kpiAttendanceSubject">—%</span>
+          </div>
+        </article>
+
+        <!-- Absent Today -->
+        <article class="kpi-card" role="group" aria-label="Students Absent Today">
+          <header class="kpi-title">Absent Today</header>
+          <div class="kpi-value" id="kpiAbsentToday">—</div>
+          <div class="kpi-subtext">
+            <a class="kpi-link" href="reports_absentees_today.html">View list</a>
+          </div>
+        </article>
       </section>
+
+      <!-- Keep your existing sections (optional placeholders) -->
+      <div class="class-cards"><!-- repeat cards for each class here --></div>
+
+      <section class="scanning-status"><!-- class scanning table here --></section>
     </main>
   </div>
+
+  <!-- Optional: tiny script to make the subject chip update (no backend needed yet) -->
+  <script>
+    const subjectSelect = document.getElementById('kpiSubjectSelect');
+    const subjectChip = document.getElementById('kpiAttendanceSubject');
+    if (subjectSelect) {
+      subjectSelect.addEventListener('change', () => {
+        // Replace with real value from your API/PHP
+        subjectChip.textContent = '—%';
+      });
+    }
+  </script>
 </body>
 </html>

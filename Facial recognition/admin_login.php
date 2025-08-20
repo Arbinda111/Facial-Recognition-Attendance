@@ -1,47 +1,32 @@
 <?php
-require 'db_connect.php';
-require 'auth.php';
+// admin_login.php
+session_start();
+require_once __DIR__ . '/db_connect.php';
 
-// If already logged in, go to dashboard
-if (isset($_SESSION['admin_id'])) {
-    header("Location: admin_dashboard.php");
-    exit();
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+  header('Location: admin_login.html'); exit;
 }
 
-$error = $_GET['error'] ?? '';
+$username = trim($_POST['username'] ?? '');
+$password = (string)($_POST['password'] ?? '');
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? "");
-    $password = $_POST['password'] ?? "";
-
-    $stmt = $conn->prepare("SELECT admin_id, password FROM admins WHERE username=?");
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $res = $stmt->get_result();
-
-    if ($row = $res->fetch_assoc()) {
-        if (password_verify($password, $row['password'])) {
-            $_SESSION['admin_id'] = $row['admin_id'];
-            header("Location: admin_dashboard.php");
-            exit();
-        }
-    }
-    $error = "Invalid username or password.";
+if ($username === '' || $password === '') {
+  exit('Missing username or password');
 }
-?>
-<!DOCTYPE html>
-<html>
-<head><title>Admin Login</title></head>
-<body>
-    <h2>Admin Login</h2>
-    <?php if($error): ?><p style="color:red;"><?php echo htmlspecialchars($error); ?></p><?php endif; ?>
-    <form method="POST" action="admin_login.php">
-        <label>Username</label><br>
-        <input name="username" required><br><br>
-        <label>Password</label><br>
-        <input type="password" name="password" required><br><br>
-        <button type="submit">Login</button>
-    </form>
-    <p><a href="forgot_password.php">Forgot password?</a></p>
-</body>
-</html>
+
+$stmt = $conn->prepare('SELECT admin_id, username, password FROM admins WHERE username = ? LIMIT 1');
+$stmt->execute([$username]);
+$user = $stmt->fetch();
+
+if (!$user || !password_verify($password, $user['password'])) {
+  // Tip: you can redirect back with a query param like ?err=1 and show a banner
+  exit('Invalid username or password');
+}
+
+// success
+$_SESSION['admin_id'] = $user['admin_id'];
+$_SESSION['admin_username'] = $user['username'];
+
+// go to the protected dashboard
+header('Location: admin_dashboard.php'); 
+exit;
