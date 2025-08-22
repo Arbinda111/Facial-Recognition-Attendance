@@ -1,67 +1,71 @@
-# GitHub Codespaces React
+# Face Recognition Auto Attendance System - Database Setup
 
-Welcome to your shiny new Codespace running React! We've got everything fired up and running for you to explore React.
+## Prerequisites
 
-You've got a blank canvas to work on from a git perspective as well. There's a single initial commit with the what you're seeing right now - where you go from here is up to you!
+- XAMPP installed and running
+- MySQL server running on localhost:3306
+- Username: root, Password: root
 
-Everything you do here is contained within this one codespace. There is no repository on GitHub yet. If and when you’re ready you can click "Publish Branch" and we’ll create your repository and push up your project. If you were just exploring then and have no further need for this code then you can simply delete your codespace and it's gone forever.
+## Installation Steps
 
+1. **Start XAMPP Services**
 
-## Available Scripts
+   - Start Apache and MySQL services from XAMPP Control Panel
 
-In the project directory, you can run:
+2. **Run Database Setup**
 
-### `npm start`
+   - Open your browser and navigate to: `http://localhost/AI_Face_recog_with_AutoAttendance/setup/install.php`
+   - This will automatically:
+     - Create the `face_recog` database
+     - Create all required tables
+     - Insert default admin user and sample data
 
+3. **Default Login Credentials**
 
+   **Admin Login:**
 
-The page will reload automatically when you make changes.\
-You may also see any lint errors in the console.
+   - URL: `http://localhost/AI_Face_recog_with_AutoAttendance/admin/admin_login.php`
+   - Username: `admin`
+   - Password: `admin123`
 
-### `npm test`
+   **Student Login:**
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+   - URL: `http://localhost/AI_Face_recog_with_AutoAttendance/student/student_login.php`
+   - Students need to be registered by admin first
 
-### `npm run build`
+## Database Structure
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Tables Created:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- `admin` - Admin users
+- `students` - Student information
+- `classes` - Course/class information
+- `sessions` - Attendance sessions
+- `student_enrollments` - Student-class relationships
+- `attendance` - Attendance records
+- `system_settings` - System configuration
+- `face_recognition_logs` - Face recognition attempt logs
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Features Implemented:
 
-## Learn More
+1. ✅ Admin authentication with database
+2. ✅ Student registration with validation
+3. ✅ Student authentication with database
+4. ✅ Student directory with search and filters
+5. ✅ Responsive design
+6. ✅ Session management
+7. ✅ Password hashing for security
 
-You can learn more in the [Vite documentation](https://vitejs.dev/guide/).
+## Next Steps:
 
-To learn Vitest, a Vite-native testing framework, go to [Vitest documentation](https://vitest.dev/guide/)
+1. Add class management functionality
+2. Implement session creation
+3. Add attendance marking system
+4. Integrate face recognition
+5. Generate reports
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Troubleshooting:
 
-### Code Splitting
-
-This section has moved here: [https://sambitsahoo.com/blog/vite-code-splitting-that-works.html](https://sambitsahoo.com/blog/vite-code-splitting-that-works.html)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://github.com/btd/rollup-plugin-visualizer#rollup-plugin-visualizer](https://github.com/btd/rollup-plugin-visualizer#rollup-plugin-visualizer)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://dev.to/hamdankhan364/simplifying-progressive-web-app-pwa-development-with-vite-a-beginners-guide-38cf](https://dev.to/hamdankhan364/simplifying-progressive-web-app-pwa-development-with-vite-a-beginners-guide-38cf)
-
-### Advanced Configuration
-
-This section has moved here: [https://vitejs.dev/guide/build.html#advanced-base-options](https://vitejs.dev/guide/build.html#advanced-base-options)
-
-### Deployment
-
-This section has moved here: [https://vitejs.dev/guide/build.html](https://vitejs.dev/guide/build.html)
-
-### Troubleshooting
-
-This section has moved here: [https://vitejs.dev/guide/troubleshooting.html](https://vitejs.dev/guide/troubleshooting.html)
-"# face_recognition_attend" 
+- If you get "Database connection failed", check MySQL is running
+- If tables aren't created, run the install.php script again
+- Check XAMPP error logs for detailed error information
