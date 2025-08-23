@@ -90,6 +90,11 @@
             color: white;
         }
 
+        .lecturer-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
         .admin-btn {
             background: linear-gradient(135deg, #a8a8a8 0%, #8a8a8a 100%);
             color: white;
@@ -102,6 +107,10 @@
 
         .student-btn:hover {
             box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .lecturer-btn:hover {
+            box-shadow: 0 15px 30px rgba(40, 167, 69, 0.4);
         }
 
         .admin-btn:hover {
@@ -139,6 +148,7 @@
         
         <div class="login-buttons">
             <a href="student/student_login.php" class="login-btn student-btn">Log in as Student</a>
+            <a href="lecturer/lecturer_login.php" class="login-btn lecturer-btn">Login as Lecturer</a>
             <a href="admin/admin_login.php" class="login-btn admin-btn">Login as Admin</a>
         </div>
     </div>
