@@ -1,65 +1,109 @@
+<?php
+session_start();
+require_once '../config/database.php';
+
+// Check if student is logged in
+if (!isset($_SESSION['student_logged_in']) || $_SESSION['student_logged_in'] !== true) {
+    header('Location: student_login.php');
+    exit();
+}
+
+$student_id = $_SESSION['student_id'];
+$student_name = $_SESSION['student_name'];
+$student_email = $_SESSION['student_email'];
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Student • Timetable (Calendar)</title>
-  <link rel="stylesheet" href="../styles.css">
-  <link rel="stylesheet" href="student.css">
-  <style>
-    .tt-grid tr:hover td { background: #f0f6ff; }
-    .btn { box-shadow: 0 2px 8px rgba(108,143,245,0.08); transition: background 0.2s, box-shadow 0.2s; }
-    .btn:hover { background: #597CE6; color: #fff; box-shadow: 0 4px 16px rgba(108,143,245,0.15); }
-  </style>
+  <title>Student Timetable - FullAttend</title>
+  <link rel="stylesheet" href="student_styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="student-portal">
   <div class="dashboard">
-    <!-- Sidebar -->
+    <!-- Enhanced Sidebar -->
     <aside class="sidebar">
-      <h2>STUDENT PORTAL</h2>
-      <nav>
-        <a href="student_dashboard.php">Dashboard</a>
-        <a href="my_attendance.php">My Attendance</a>
-        <a href="student_timetable.php" class="active">Timetable</a>
-        <a href="settings.php">Settings</a>
-        <a href="student_Logout.php">Logout</a>
+      <div class="sidebar-header">
+        <div class="student-avatar">
+          <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($student_name); ?>&background=667eea&color=fff&size=60" alt="Student Avatar">
+        </div>
+        <div class="student-info">
+          <h3><?php echo htmlspecialchars($student_name); ?></h3>
+          <p class="student-id">ID: <?php echo htmlspecialchars($_SESSION['student_id']); ?></p>
+          <span class="status-badge online">Online</span>
+        </div>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <a href="student_dashboard.php" class="nav-item">
+          <i class="fas fa-chart-pie"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="my_attendance.php" class="nav-item">
+          <i class="fas fa-calendar-check"></i>
+          <span>My Attendance</span>
+        </a>
+        <a href="student_timetable.php" class="nav-item active">
+          <i class="fas fa-calendar-alt"></i>
+          <span>Timetable</span>
+        </a>
+        <a href="settings.php" class="nav-item">
+          <i class="fas fa-cog"></i>
+          <span>Settings</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="student_logout.php" class="nav-item logout">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </a>
       </nav>
-      <div class="logos">
-        <img height="80px" src="../images/cihe_logo.png" alt="CIHE Logo">
-        <img height="80px" src="../images/fullattend_logo.png" alt="FullAttend Logo">
+      
+      <div class="sidebar-footer">
+        <div class="logos">
+          <img src="../images/cihe_logo.png" alt="CIHE Logo" class="logo">
+          <img src="../images/fullattend_logo.png" alt="FullAttend Logo" class="logo">
+        </div>
       </div>
     </aside>
 
-    <!-- Main -->
+    <!-- Main Dashboard Content -->
     <main class="dashboard-content">
-      <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
-        <div>
-          <h1>My Timetable</h1>
-          <p class="muted">Week view</p>
+      <!-- Header Section -->
+      <header class="dashboard-header">
+        <div class="header-content">
+          <div class="welcome-section">
+            <h1>My Timetable</h1>
+            <p class="subtitle">Your weekly class schedule</p>
+          </div>
+          <div class="header-actions">
+            <div class="date-info">
+              <i class="fas fa-calendar"></i>
+              <span><?php echo date('l, F j, Y'); ?></span>
+            </div>
+          </div>
         </div>
-        <div class="toolbar">
-          <!-- <button class="btn" type="button" disabled>&larr; Prev</button> -->
-          <span class="pill">Mon 12 – Fri 16 May 2025</span>
-          <!-- <button class="btn" type="button" disabled>Next &rarr;</button> -->
-          <select class="class-selector" aria-label="Filter by class">
-            <option value="">All Classes</option>
-            <option>Class 101</option>
-            <option>Class 102</option>
-            <option>Class 103</option>
-            <option>Class 104</option>
-          </select>
-        </div>
-      </div>
+      </header>
 
-      <!-- Calendar grid -->
-      <section class="scanning-status" style="margin-top:16px;">
-        <table class="table tt-grid">
-          <thead>
-            <tr>
-              <th style="width:120px;">Time</th>
-              <th>Monday</th>
-              <th>Tuesday</th>
+      <!-- Timetable Section -->
+      <section class="dashboard-card">
+        <div class="card-header">
+          <h2><i class="fas fa-calendar-week"></i> Weekly Schedule</h2>
+          <div class="timetable-controls">
+            <span class="current-week">Mon 12 – Fri 16 May 2025</span>
+          </div>
+        </div>
+
+        <!-- Calendar grid -->
+        <div class="timetable-container">
+          <table class="timetable-grid">
+            <thead>
+              <tr>
+                <th class="time-column">Time</th>
+                <th>Monday</th>
+                <th>Tuesday</th>
               <th>Wednesday</th>
               <th>Thursday</th>
               <th>Friday</th>
