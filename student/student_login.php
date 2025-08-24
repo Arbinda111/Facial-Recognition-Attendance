@@ -92,9 +92,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </button>
       </form>
       
-      <div class="forgot-password">
+      <!-- <div class="forgot-password">
         <a href="forgot_password.php">Forgotten Password?</a>
-      </div>
+      </div> -->
     </div>
   </div>
 
@@ -111,39 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </body>
 </html>
 
-    // Add floating animation to background elements
-    document.addEventListener('DOMContentLoaded', function() {
-      const container = document.querySelector('.container');
-      
-      // Create floating particles
-      for (let i = 0; i < 5; i++) {
-        const particle = document.createElement('div');
-        particle.style.cssText = `
-          position: absolute;
-          width: ${Math.random() * 6 + 4}px;
-          height: ${Math.random() * 6 + 4}px;
-          background: rgba(108, 143, 245, 0.3);
-          border-radius: 50%;
-          animation: float ${Math.random() * 10 + 15}s ease-in-out infinite;
-          animation-delay: ${Math.random() * 5}s;
-          top: ${Math.random() * 100}%;
-          left: ${Math.random() * 100}%;
-          z-index: 1;
-        `;
-        container.appendChild(particle);
-      }
-    });
-
-    // Add input focus animations
-    document.querySelectorAll('.input-group input').forEach(input => {
-      input.addEventListener('focus', function() {
-        this.parentElement.style.transform = 'scale(1.02)';
-      });
-      
-      input.addEventListener('blur', function() {
-        this.parentElement.style.transform = 'scale(1)';
-      });
-    });
+   
   </script>
 </body>
 </html>

@@ -7,7 +7,7 @@
 
 body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(232, 210, 210, 0.95);
   min-height: 100vh;
 }
 
@@ -29,14 +29,14 @@ body {
   text-decoration: none;
   font-size: 16px;
   padding: 10px 15px;
-  background: rgba(255, 255, 255, 0.2);
+  background: #667eea;
   border-radius: 25px;
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
 }
 
 .back-button:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: #667eea;
   transform: translateX(-5px);
 }
 
@@ -151,8 +151,8 @@ body {
 
 .sidebar {
   width: 280px;
-  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: #e1cfcf;
+  color: #000000;
   padding: 30px 0;
   box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
   position: fixed;
@@ -191,7 +191,7 @@ body {
 }
 
 .sidebar-header .student-info h3 {
-  color: white;
+  color: #000000;
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 5px;
@@ -199,7 +199,7 @@ body {
 }
 
 .sidebar-header .student-id {
-  color: rgba(255, 255, 255, 0.8);
+  color: #000000;
   font-size: 14px;
   margin-bottom: 10px;
   display: block;
@@ -253,12 +253,12 @@ body {
 }
 
 .nav-item.logout {
-  color: rgba(255, 255, 255, 0.6);
+  color: #000000;
 }
 
 .nav-item.logout:hover {
   background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
+  color: #000000;
 }
 
 .sidebar-footer {
@@ -506,7 +506,7 @@ body {
 
 .sidebar nav a {
   display: block;
-  color: #bdc3c7;
+  color: #000000;
   text-decoration: none;
   padding: 15px 20px;
   margin-bottom: 5px;
@@ -518,7 +518,7 @@ body {
 .sidebar nav a:hover,
 .sidebar nav a.active {
   background: rgba(255, 255, 255, 0.15);
-  color: white;
+  color: #000000;
   transform: translateX(5px);
 }
 
