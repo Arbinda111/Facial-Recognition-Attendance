@@ -21,8 +21,8 @@ body {
 /* Enhanced Admin Sidebar */
 .admin-sidebar {
   width: 280px;
-  background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
-  color: white;
+  background: #e1cfcf;
+  color: #000000;
   position: fixed;
   height: 100vh;
   left: 0;
@@ -88,7 +88,7 @@ body {
 
 .admin-details p {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: #000000;
   margin-bottom: 8px;
 }
 
@@ -115,7 +115,7 @@ body {
   align-items: center;
   gap: 12px;
   padding: 12px 20px;
-  color: rgba(255, 255, 255, 0.8);
+  color: #000000;
   text-decoration: none;
   transition: all 0.3s ease;
   border-left: 3px solid transparent;
@@ -475,7 +475,7 @@ body {
 
 /* Login Page Styles */
 body.login-page {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(232, 210, 210, 0.95);
 }
 
 .container {
@@ -495,14 +495,14 @@ body.login-page {
   text-decoration: none;
   font-size: 16px;
   padding: 10px 15px;
-  background: rgba(255, 255, 255, 0.2);
+  background: #667eea;
   border-radius: 25px;
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
 }
 
 .back-button:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: #667eea;
   transform: translateX(-5px);
 }
 
@@ -1314,7 +1314,7 @@ td {
   align-items: center;
   gap: 12px;
   padding: 15px 25px;
-  color: rgba(255, 255, 255, 0.8);
+  color: #000000;
   text-decoration: none;
   transition: all 0.3s ease;
   margin: 0 15px 5px;
@@ -1325,7 +1325,7 @@ td {
 .nav-item:hover,
 .nav-item.active {
   background: rgba(255, 255, 255, 0.15);
-  color: white;
+  color: #000000;
   transform: translateX(5px);
 }
 
