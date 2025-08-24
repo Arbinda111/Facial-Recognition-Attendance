@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -22,7 +22,7 @@
         }
 
         .login-interface {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(232, 210, 210, 0.95);
             padding: 50px 40px;
             border-radius: 25px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
@@ -148,8 +148,8 @@
         
         <div class="login-buttons">
             <a href="student/student_login.php" class="login-btn student-btn">Log in as Student</a>
-            <a href="lecturer/lecturer_login.php" class="login-btn lecturer-btn">Login as Lecturer</a>
-            <a href="admin/admin_login.php" class="login-btn admin-btn">Login as Admin</a>
+            <a href="lecturer/lecturer_login.php" class="login-btn student-btn">Login as Lecturer</a>
+            <a href="admin/admin_login.php" class="login-btn student-btn">Login as Admin</a>
         </div>
     </div>
 </body>
