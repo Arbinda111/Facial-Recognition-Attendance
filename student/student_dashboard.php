@@ -100,14 +100,12 @@ $recent_attendance = $stmt->fetchAll();
           <i class="fas fa-sign-out-alt"></i>
           <span>Logout</span>
         </a>
-      </nav>
-      
-      <div class="sidebar-footer">
-        <div class="logos">
-          <img src="../images/cihe_logo.png" alt="CIHE Logo" class="logo">
-          <img src="../images/fullattend_logo.png" alt="FullAttend Logo" class="logo">
+        <div class="nav-divider"></div>
+        <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+          <img src="../images/cihe_logo.png" height="50px" alt="CIHE Logo" class="logo">
+          <img src="../images/fullattend_logo.png" height="50px" alt="FullAttend Logo" class="logo">
         </div>
-      </div>
+      </nav>
     </aside>
 
     <!-- Main Dashboard Content -->
