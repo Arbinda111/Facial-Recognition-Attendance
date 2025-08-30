@@ -38,6 +38,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <a href="add_lecturer.php" class="nav-item <?php echo ($current_page == 'add_lecturer.php') ? 'active' : ''; ?>">
             <i class="fas fa-chalkboard-teacher"></i>
             <span>Add Lecturer</span>
+            </a>
+            <a href="assign_subjects.php" class="nav-item <?php echo ($current_page == 'assign_subjects.php') ? 'active' : ''; ?>">
+                <i class="fas fa-book"></i>
+                <span>Assign Subjects</span>
         </a>
         <a href="class_management.php" class="nav-item <?php echo ($current_page == 'class_management.php') ? 'active' : ''; ?>">
             <i class="fas fa-graduation-cap"></i>
