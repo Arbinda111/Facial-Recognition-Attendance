@@ -36,11 +36,14 @@ $week_attendance = $stmt->fetch()['count'];
 $days_in_week = max(1, (strtotime('now') - strtotime($week_start)) / (60 * 60 * 24) + 1);
 $attendance_percentage = $days_in_week > 0 ? round(($week_attendance / min($days_in_week, 5)) * 100) : 0;
 
-// Face registration status
-$stmt = $pdo->prepare("SELECT face_encoding FROM students WHERE id = ?");
-$stmt->execute([$student_id]);
-$student = $stmt->fetch();
-$face_registered = !empty($student['face_encoding']);
+// Number of enrolled subjects - Use student PK id from session
+$enrolled_subjects = 0;
+if (!empty($_SESSION['student_db_id'])) {
+    $student_pk_id = $_SESSION['student_db_id'];
+    $stmt = $pdo->prepare("SELECT COUNT(DISTINCT subject_id) as subject_count FROM lecturer_student_enrollments WHERE student_id = ?");
+    $stmt->execute([$student_pk_id]);
+    $enrolled_subjects = $stmt->fetch()['subject_count'];
+}
 
 // Recent attendance records
 $stmt = $pdo->prepare("
@@ -72,7 +75,7 @@ $recent_attendance = $stmt->fetchAll();
           <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($student_name); ?>&background=667eea&color=fff&size=60" alt="Student Avatar">
         </div>
         <div class="student-info">
-          <h3><?php echo htmlspecialchars($student_name); ?></h3>
+          <h3><?php echo htmlspecialchars($student_name); ?> (ID: <?php echo htmlspecialchars($_SESSION['student_db_id']); ?>)</h3>
           <p class="student-id">ID: <?php echo htmlspecialchars($_SESSION['student_id']); ?></p>
           <span class="status-badge online">Online</span>
         </div>
@@ -171,51 +174,17 @@ $recent_attendance = $stmt->fetchAll();
           </div>
         </div>
 
-        <div class="stat-card face-registration">
+        <div class="stat-card enrolled-subjects">
           <div class="stat-icon">
-            <i class="fas fa-<?php echo $face_registered ? 'check-circle' : 'exclamation-triangle'; ?>"></i>
+            <i class="fas fa-book-open"></i>
           </div>
           <div class="stat-content">
-            <h3>Face Registration</h3>
-            <div class="stat-value"><?php echo $face_registered ? 'Active' : 'Pending'; ?></div>
-            <div class="stat-trend <?php echo $face_registered ? 'positive' : 'urgent'; ?>">
-              <i class="fas fa-<?php echo $face_registered ? 'star' : 'exclamation-triangle'; ?>"></i>
-              <span><?php echo $face_registered ? 'Face ID registered' : 'Registration required'; ?></span>
+            <h3>Enrolled Subjects</h3>
+            <div class="stat-value"><?php echo $enrolled_subjects; ?></div>
+            <div class="stat-trend">
+              <span>Subjects you are enrolled in</span>
             </div>
           </div>
-        </div>
-      </section>
-
-      <!-- Recent Attendance -->
-      <section class="dashboard-card attendance-card">
-        <div class="card-header">
-          <h2><i class="fas fa-history"></i> Recent Attendance</h2>
-          <a href="my_attendance.php" class="view-all-btn">View All Records</a>
-        </div>
-        <div class="recent-attendance-list">
-          <?php if (empty($recent_attendance)): ?>
-            <div class="no-records">
-              <i class="fas fa-calendar-times"></i>
-              <p>No attendance records found</p>
-              <small>Your attendance will appear here once marked</small>
-            </div>
-          <?php else: ?>
-            <?php foreach ($recent_attendance as $record): ?>
-              <div class="attendance-item">
-                <div class="attendance-date">
-                  <div class="date"><?php echo date('M d', strtotime($record['date'])); ?></div>
-                  <div class="day"><?php echo date('D', strtotime($record['date'])); ?></div>
-                </div>
-                <div class="attendance-info">
-                  <h4>Attendance Marked</h4>
-                  <p>Time: <?php echo date('g:i A', strtotime($record['time'])); ?></p>
-                </div>
-                <div class="attendance-status">
-                  <span class="status-badge present">Present</span>
-                </div>
-              </div>
-            <?php endforeach; ?>
-          <?php endif; ?>
         </div>
       </section>
 
@@ -229,12 +198,6 @@ $recent_attendance = $stmt->fetchAll();
             <i class="fas fa-list"></i>
             <span>View Full Attendance</span>
           </a>
-          <?php if (!$face_registered): ?>
-          <a href="../admin/student_face_registration.php" class="action-btn secondary">
-            <i class="fas fa-camera"></i>
-            <span>Register Face ID</span>
-          </a>
-          <?php endif; ?>
           <a href="settings.php" class="action-btn secondary">
             <i class="fas fa-cog"></i>
             <span>Account Settings</span>
@@ -247,55 +210,6 @@ $recent_attendance = $stmt->fetchAll();
   <script>
     // Add some interactive functionality
     document.addEventListener('DOMContentLoaded', function() {
-      // Animate progress bars
-      const progressBars = document.querySelectorAll('.progress-bar');
-      progressBars.forEach(bar => {
-        const progress = getComputedStyle(bar).getPropertyValue('--progress');
-        bar.style.setProperty('--progress', '0%');
-        setTimeout(() => {
-          bar.style.setProperty('--progress', progress);
-        }, 500);
-      });
-      
-      // Add hover effects to cards
-      const cards = document.querySelectorAll('.dashboard-card, .stat-card');
-      cards.forEach(card => {
-        card.addEventListener('mouseenter', function() {
-          this.style.transform = 'translateY(-2px)';
-        });
-        card.addEventListener('mouseleave', function() {
-          this.style.transform = 'translateY(0)';
-        });
-      });
-    });
-  </script>
-</body>
-</html>
-        <div class="logos">
-          <img src="../images/cihe_logo.png" alt="CIHE Logo" class="logo">
-          <img src="../images/fullattend_logo.png" alt="FullAttend Logo" class="logo">
-        </div>
-      </div>
-    </aside>
-
-    <!-- Main Dashboard Content -->
-    </main>
-  </div>
-
-  <script>
-    // Add some interactive functionality
-    document.addEventListener('DOMContentLoaded', function() {
-      // Update time every minute
-      function updateTime() {
-        const now = new Date();
-        const timeString = now.toLocaleTimeString('en-US', { 
-          hour12: true, 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        });
-        document.querySelector('.current-time')?.textContent = timeString;
-      }
-      
       // Animate progress bars
       const progressBars = document.querySelectorAll('.progress-bar');
       progressBars.forEach(bar => {
