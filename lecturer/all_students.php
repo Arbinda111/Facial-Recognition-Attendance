@@ -9,9 +9,24 @@ if (!isset($_SESSION['lecturer_logged_in']) || $_SESSION['lecturer_logged_in'] !
 }
 
 // Get all students
-$stmt = $pdo->prepare("SELECT student_id, name, email, face_encoding, status, created_at FROM students ORDER BY name ASC");
-$stmt->execute();
-$students = $stmt->fetchAll();
+
+// Get lecturer ID from session
+
+$lecturer_id = $_SESSION['lecturer_id'];
+
+// Get all class IDs taught by this lecturer 
+//django tesko manual rakhya ho sab ma url kahi set garya xaina malai djang
+// Step 1: Get subject IDs assigned to this lecturer
+
+// Get students enrolled under this lecturer using lecturer_student_enrollments
+
+// Get subject IDs assigned to this lecturer
+
+$students = [];
+$lecturer_id = $_SESSION['lecturer_id'];
+$enroll_stmt = $pdo->prepare("SELECT s.student_id, s.name, s.email, s.face_encoding, s.status, s.created_at FROM lecturer_student_enrollments lse JOIN students s ON lse.student_id = s.id WHERE lse.lecturer_id = ? ORDER BY s.name ASC");
+$enroll_stmt->execute([$lecturer_id]);
+$students = $enroll_stmt->fetchAll();
 
 // Get statistics
 $total_students = count($students);
@@ -46,6 +61,7 @@ foreach ($students as $student) {
                 <a href="lecturer_dashboard.php">Dashboard</a>
                 <a href="face_attendance.php">Face Attendance</a>
                 <a href="all_students.php" class="active">All Students</a>
+                <a href="lecturer_timetable.php">Timetable</a>
                 <a href="lecturer_logout.php">Logout</a>
             </nav>
             <div class="logos">
@@ -102,7 +118,7 @@ foreach ($students as $student) {
                             <th><i class="fas fa-id-card"></i> Student ID</th>
                             <th><i class="fas fa-user"></i> Name</th>
                             <th><i class="fas fa-envelope"></i> Email</th>
-                            <th><i class="fas fa-camera"></i> Face Status</th>
+                            <!-- <th><i class="fas fa-camera"></i> Face Status</th> -->
                             <th><i class="fas fa-info-circle"></i> Status</th>
                             <th><i class="fas fa-calendar"></i> Registered</th>
                         </tr>
@@ -132,17 +148,7 @@ foreach ($students as $student) {
                                         </div>
                                     </td>
                                     <td><?php echo htmlspecialchars($student['email']); ?></td>
-                                    <td>
-                                        <?php if (!empty($student['face_encoding'])): ?>
-                                            <span class="status-badge" style="background: #d4edda; color: #155724;">
-                                                <i class="fas fa-check"></i> Registered
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="status-badge" style="background: #f8d7da; color: #721c24;">
-                                                <i class="fas fa-times"></i> Not Registered
-                                            </span>
-                                        <?php endif; ?>
-                                    </td>
+                                   
                                     <td>
                                         <span class="status-badge <?php echo $student['status']; ?>">
                                             <?php echo ucfirst($student['status']); ?>

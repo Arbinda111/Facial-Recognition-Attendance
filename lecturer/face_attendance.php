@@ -10,6 +10,25 @@ if (!isset($_SESSION['lecturer_logged_in']) || $_SESSION['lecturer_logged_in'] !
 
 $lecturer_id = $_SESSION['lecturer_id'];
 $lecturer_name = $_SESSION['lecturer_name'];
+// Fetch sessions for this lecturer
+$sessions = [];
+$selected_session_id = isset($_POST['session_id']) ? intval($_POST['session_id']) : null;
+$pdo = getDBConnection();
+$stmt = $pdo->prepare("SELECT s.id, s.session_name, s.session_date, s.start_time, s.end_time, c.class_name FROM sessions s JOIN classes c ON s.class_id = c.id WHERE c.lecturer_id = ? AND s.status IN ('scheduled', 'ongoing') AND s.session_date = CURDATE() ORDER BY s.start_time ASC");
+$stmt->execute([$lecturer_id]);
+$sessions = $stmt->fetchAll();
+
+// Handle session start
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['start_session']) && $selected_session_id) {
+    $update = $pdo->prepare("UPDATE sessions SET status = 'ongoing' WHERE id = ?");
+    $update->execute([$selected_session_id]);
+}
+
+// Check if there is an ongoing session for this lecturer
+$ongoing_session = null;
+$ongoing_stmt = $pdo->prepare("SELECT s.id, s.session_name, s.session_date, s.start_time, s.end_time, c.class_name FROM sessions s JOIN classes c ON s.class_id = c.id WHERE c.lecturer_id = ? AND s.status = 'ongoing' AND s.session_date = CURDATE() ORDER BY s.start_time ASC LIMIT 1");
+$ongoing_stmt->execute([$lecturer_id]);
+$ongoing_session = $ongoing_stmt->fetch();
 ?>
 
 <!DOCTYPE html>
@@ -270,6 +289,7 @@ $lecturer_name = $_SESSION['lecturer_name'];
                 <a href="lecturer_dashboard.php">Dashboard</a>
                 <a href="face_attendance.php" class="active">Face Attendance</a>
                 <a href="all_students.php">All Students</a>
+                <a href="lecturer_timetable.php">Timetable</a>
                 <a href="lecturer_logout.php">Logout</a>
             </nav>
             <div class="logos">
@@ -286,16 +306,35 @@ $lecturer_name = $_SESSION['lecturer_name'];
                         <h2><i class="fas fa-camera"></i> Student Face Attendance</h2>
                         <p>Take attendance using facial recognition for all students</p>
                         <p><strong>Lecturer:</strong> <?php echo htmlspecialchars($lecturer_name); ?></p>
+                        <?php if (!$ongoing_session): ?>
+                        <form method="post" style="margin: 20px 0;">
+                            <label for="session_id"><strong>Select Session to Start:</strong></label>
+                            <select name="session_id" id="session_id" required style="padding: 8px; border-radius: 6px; margin-right: 10px;">
+                                <option value="">--Select--</option>
+                                <?php foreach ($sessions as $session): ?>
+                                    <option value="<?php echo $session['id']; ?>">
+                                        <?php echo htmlspecialchars($session['session_name']) . ' (' . htmlspecialchars($session['class_name']) . ') ' . htmlspecialchars($session['start_time']) . ' - ' . htmlspecialchars($session['end_time']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <button type="submit" name="start_session" class="start-camera-btn"><i class="fas fa-play"></i> Start Session</button>
+                        </form>
+                        <div class="message info">You must start a session before taking attendance.</div>
+                        <?php endif; ?>
+                        <?php if ($ongoing_session): ?>
+                        <div class="message success">Ongoing Session: <strong><?php echo htmlspecialchars($ongoing_session['session_name']); ?></strong> (<?php echo htmlspecialchars($ongoing_session['class_name']); ?>) <?php echo htmlspecialchars($ongoing_session['start_time']); ?> - <?php echo htmlspecialchars($ongoing_session['end_time']); ?></div>
+                        
+                        <?php endif; ?>
                     </div>
 
-                    <div class="mode-toggle">
+                    <?php if ($ongoing_session): ?>
+                        <div class="mode-toggle">
                         <label class="toggle-label">
                             <input type="checkbox" id="testMode">
                             <span class="toggle-slider"></span>
                             Test Mode (Detailed Analysis)
                         </label>
                     </div>
-
                     <div class="capture-section">
                         <div id="startCapture" class="start-capture">
                             <h3><i class="fas fa-camera"></i> Ready to Take Attendance?</h3>
@@ -341,12 +380,13 @@ $lecturer_name = $_SESSION['lecturer_name'];
                             </div>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                     <div id="messageArea"></div>
                     <div id="resultArea"></div>
                 </div>
             </div>
-        </main>
+    </main>
     </div>
 
     <script>

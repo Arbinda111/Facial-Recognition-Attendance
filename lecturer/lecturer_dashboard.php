@@ -50,6 +50,7 @@ $stats['current_time'] = date('g:i A');
                 <a href="lecturer_dashboard.php" class="active">Dashboard</a>
                 <a href="face_attendance.php">Face Attendance</a>
                 <a href="all_students.php">All Students</a>
+                <a href="lecturer_timetable.php">Timetable</a>
                 <a href="lecturer_logout.php">Logout</a>
             </nav>
             <div class="logos">
