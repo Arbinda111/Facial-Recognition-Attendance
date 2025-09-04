@@ -19,20 +19,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'add_class':
-                $class_name = trim($_POST['class_name']);
+                $subject_id = intval($_POST['subject_id']);
                 $class_code = trim($_POST['class_code']);
                 $description = trim($_POST['description']);
-                $instructor_name = trim($_POST['instructor_name']);
+                $lecturer_name = trim($_POST['lecturer_name']);
+                $lecturer_id = intval($_POST['lecturer_id']);
                 $semester = trim($_POST['semester']);
                 $academic_year = trim($_POST['academic_year']);
-                
-                if (empty($class_name) || empty($class_code) || empty($instructor_name)) {
-                    $error_message = 'Class name, class code, and instructor are required fields.';
+
+                // Get subject name for class_name
+                $class_name = '';
+                if ($subject_id) {
+                    $stmt_sub = $pdo->prepare("SELECT subject_name FROM subjects WHERE id = ?");
+                    $stmt_sub->execute([$subject_id]);
+                    $class_name = $stmt_sub->fetchColumn();
+                }
+
+                if (empty($class_name) || empty($class_code) || empty($lecturer_name) || empty($lecturer_id)) {
+                    $error_message = 'Subject, class code, and lecturer are required fields.';
                 } else {
                     try {
-                        $stmt = $pdo->prepare("INSERT INTO classes (class_name, class_code, description, instructor_name, semester, academic_year) VALUES (?, ?, ?, ?, ?, ?)");
-                        $stmt->execute([$class_name, $class_code, $description, $instructor_name, $semester, $academic_year]);
-                        $success_message = "Class '$class_name' has been successfully created.";
+                        // Insert subject_id and lecturer_id into classes table
+                        $stmt = $pdo->prepare("INSERT INTO classes (subject_id, lecturer_id, class_name, class_code, description, instructor_name, semester, academic_year, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')");
+                        $stmt->execute([$subject_id, $lecturer_id, $class_name, $class_code, $description, $lecturer_name, $semester, $academic_year]);
+                        $success_message = "Class for subject '$class_name' and lecturer '$lecturer_name' has been successfully created.";
                     } catch (PDOException $e) {
                         if ($e->getCode() == '23000') {
                             $error_message = 'Class code already exists. Please use a different code.';
@@ -122,8 +132,32 @@ try {
     $stmt = $pdo->query("SELECT DISTINCT instructor_name FROM classes WHERE instructor_name IS NOT NULL ORDER BY instructor_name");
     $instructors = $stmt->fetchAll(PDO::FETCH_COLUMN);
 } catch (PDOException $e) {
-    // Use default instructors if query fails
     $instructors = ['Dr. Smith', 'Prof. Johnson', 'Dr. Wilson', 'Dr. Brown', 'Prof. Davis'];
+}
+
+// Get subjects for dropdown (only those with a lecturer assigned)
+$subjects = [];
+$subjectLecturerMap = [];
+try {
+    $stmt = $pdo->query("SELECT s.id, s.subject_name, s.subject_code, l.id as lecturer_id, l.name as lecturer_name 
+                         FROM subjects s 
+                         INNER JOIN lecturer_subjects ls ON s.id = ls.subject_id 
+                         INNER JOIN lecturers l ON ls.lecturer_id = l.id 
+                         WHERE s.status = 'active' 
+                         ORDER BY s.subject_name");
+    while ($row = $stmt->fetch()) {
+        $subjects[] = [
+            'id' => $row['id'],
+            'subject_name' => $row['subject_name'],
+            'subject_code' => $row['subject_code']
+        ];
+        $subjectLecturerMap[$row['id']] = [
+            'lecturer_id' => $row['lecturer_id'],
+            'lecturer_name' => $row['lecturer_name']
+        ];
+    }
+} catch (PDOException $e) {
+    $subjects = [];
 }
 
 // Calculate statistics
@@ -141,6 +175,15 @@ $active_classes = count(array_filter($classes, function($class) { return $class[
     <title>Class Management - Full Attend</title>
     <link rel="stylesheet" href="admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .admin-main {
+            flex: 1;
+            padding: 20px;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+    </style>
 </head>
 <body>
     <div class="admin-container">
@@ -222,7 +265,7 @@ $active_classes = count(array_filter($classes, function($class) { return $class[
                 <div class="card">
                     <div class="card-header">
                         <h3><i class="fas fa-plus-circle"></i> Add New Class</h3>
-                        <button type="button" class="btn-secondary" id="toggleForm">
+                        <button type="button" class="btn-secondary" id="toggleForm" onclick="toggleForm()">
                             <i class="fas fa-plus"></i>
                             Add Class
                         </button>
@@ -234,9 +277,15 @@ $active_classes = count(array_filter($classes, function($class) { return $class[
                             
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label for="class_name"><i class="fas fa-book"></i> Class Name</label>
-                                    <input type="text" id="class_name" name="class_name" 
-                                           placeholder="e.g., Data Structures and Algorithms" required>
+                                    <label for="subject_id"><i class="fas fa-book"></i> Subject</label>
+                                    <select id="subject_id" name="subject_id" required onchange="updateLecturer()">
+                                        <option value="">Select Subject</option>
+                                        <?php foreach ($subjects as $sub): ?>
+                                            <option value="<?php echo $sub['id']; ?>">
+                                                <?php echo htmlspecialchars($sub['subject_name']) . ' (' . htmlspecialchars($sub['subject_code']) . ')'; ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
                                 </div>
                                 
                                 <div class="form-group">
@@ -246,14 +295,9 @@ $active_classes = count(array_filter($classes, function($class) { return $class[
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label for="instructor_name"><i class="fas fa-user-tie"></i> Instructor</label>
-                                    <input type="text" id="instructor_name" name="instructor_name" 
-                                           placeholder="e.g., Dr. Smith" list="instructors-list" required>
-                                    <datalist id="instructors-list">
-                                        <?php foreach ($instructors as $instr): ?>
-                                            <option value="<?php echo htmlspecialchars($instr); ?>">
-                                        <?php endforeach; ?>
-                                    </datalist>
+                                    <label for="lecturer_name"><i class="fas fa-user-tie"></i> Lecturer</label>
+                                    <input type="text" id="lecturer_name" name="lecturer_name" readonly required placeholder="Select subject first">
+                                    <input type="hidden" id="lecturer_id" name="lecturer_id">
                                 </div>
                                 
                                 <div class="form-group">
@@ -311,85 +355,52 @@ $active_classes = count(array_filter($classes, function($class) { return $class[
                         </div>
                     </div>
                     
-                    <div class="table-container">
+                    <div class="table-content">
                         <?php if (count($classes) > 0): ?>
                         <table class="classes-table" id="classesTable">
                             <thead>
                                 <tr>
-                                    <th>Class Info</th>
+                                    <th>Subject Name</th>
+                                    <th>Subject Code</th>
+                                    <th>Class Name</th>
+                                    <th>Class Code</th>
+                                    <th>Description</th>
                                     <th>Instructor</th>
                                     <th>Semester</th>
+                                    <th>Academic Year</th>
+                                    <th>Status</th>
                                     <th>Enrolled</th>
                                     <th>Sessions</th>
-                                    <th>Status</th>
+                                    <th>Upcoming</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($classes as $class): ?>
                                 <tr>
-                                    <td>
-                                        <div class="class-info">
-                                            <strong><?php echo htmlspecialchars($class['class_name']); ?></strong>
-                                            <div class="class-code"><?php echo htmlspecialchars($class['class_code']); ?></div>
-                                            <?php if ($class['description']): ?>
-                                                <small class="class-description"><?php echo htmlspecialchars(substr($class['description'], 0, 50)) . '...'; ?></small>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="instructor-info">
-                                            <i class="fas fa-user-tie"></i>
-                                            <?php echo htmlspecialchars($class['instructor_name']); ?>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="semester-info">
-                                            <?php if ($class['semester']): ?>
-                                                <span class="semester"><?php echo htmlspecialchars($class['semester']); ?></span>
-                                            <?php endif; ?>
-                                            <?php if ($class['academic_year']): ?>
-                                                <div class="academic-year"><?php echo htmlspecialchars($class['academic_year']); ?></div>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="enrollment-info">
-                                            <span class="enrolled-count">
-                                                <i class="fas fa-users"></i>
-                                                <?php echo $class['enrolled_count']; ?> students
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="session-info">
-                                            <span class="session-count">
-                                                <i class="fas fa-calendar"></i>
-                                                <?php echo $class['total_sessions']; ?> total
-                                            </span>
-                                            <?php if ($class['upcoming_sessions'] > 0): ?>
-                                                <div class="upcoming-sessions">
-                                                    <small><?php echo $class['upcoming_sessions']; ?> upcoming</small>
-                                                </div>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge <?php echo strtolower($class['status']); ?>">
-                                            <?php echo ucfirst($class['status']); ?>
-                                        </span>
-                                    </td>
+                                    <?php
+                                    $subjectInfo = null;
+                                    foreach ($subjects as $subject) {
+                                        if ($subject['id'] == $class['subject_id']) {
+                                            $subjectInfo = $subject;
+                                            break;
+                                        }
+                                    }
+                                    ?>
+                                    <td><?php echo $subjectInfo ? htmlspecialchars($subjectInfo['subject_name']) : '-'; ?></td>
+                                    <td><?php echo $subjectInfo ? htmlspecialchars($subjectInfo['subject_code']) : '-'; ?></td>
+                                    <td><?php echo htmlspecialchars($class['class_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($class['class_code']); ?></td>
+                                    <td><?php echo htmlspecialchars($class['description']); ?></td>
+                                    <td><?php echo htmlspecialchars($class['instructor_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($class['semester']); ?></td>
+                                    <td><?php echo htmlspecialchars($class['academic_year']); ?></td>
+                                    <td><span class="status-badge <?php echo strtolower($class['status']); ?>"><?php echo ucfirst($class['status']); ?></span></td>
+                                    <td><?php echo (int)$class['enrolled_count']; ?></td>
+                                    <td><?php echo (int)$class['total_sessions']; ?></td>
+                                    <td><?php echo (int)$class['upcoming_sessions']; ?></td>
                                     <td>
                                         <div class="action-buttons">
-                                            <button class="btn-icon" title="View Details" onclick="viewClass(<?php echo $class['id']; ?>)">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                            <button class="btn-icon" title="Edit Class" onclick="editClass(<?php echo $class['id']; ?>)">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn-icon" title="Manage Students" onclick="manageStudents(<?php echo $class['id']; ?>)">
-                                                <i class="fas fa-users"></i>
-                                            </button>
                                             <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to toggle this class status?')">
                                                 <input type="hidden" name="action" value="toggle_status">
                                                 <input type="hidden" name="class_id" value="<?php echo $class['id']; ?>">
@@ -410,10 +421,6 @@ $active_classes = count(array_filter($classes, function($class) { return $class[
                             <i class="fas fa-chalkboard-teacher"></i>
                             <h3>No Classes Found</h3>
                             <p>Create your first class to get started with managing your courses.</p>
-                            <button class="btn-primary" onclick="toggleForm()">
-                                <i class="fas fa-plus"></i>
-                                Add First Class
-                            </button>
                         </div>
                         <?php endif; ?>
                     </div>
@@ -423,20 +430,37 @@ $active_classes = count(array_filter($classes, function($class) { return $class[
     </div>
     
     <script>
+        // Create the subject-lecturer mapping from PHP to JavaScript
+        const subjectLecturerMap = <?php echo json_encode($subjectLecturerMap); ?>;
+        
+        function updateLecturer() {
+            const subjectSelect = document.getElementById('subject_id');
+            const lecturerInput = document.getElementById('lecturer_name');
+            const lecturerIdInput = document.getElementById('lecturer_id');
+            
+            const subjectId = subjectSelect.value;
+            
+            if (subjectId && subjectLecturerMap[subjectId]) {
+                lecturerInput.value = subjectLecturerMap[subjectId].lecturer_name;
+                lecturerIdInput.value = subjectLecturerMap[subjectId].lecturer_id;
+            } else {
+                lecturerInput.value = '';
+                lecturerIdInput.value = '';
+            }
+        }
+        
         function toggleForm() {
             const form = document.getElementById('addClassForm');
             const toggleBtn = document.getElementById('toggleForm');
-            
             if (form.style.display === 'none') {
                 form.style.display = 'block';
                 toggleBtn.innerHTML = '<i class="fas fa-times"></i> Cancel';
-                // Focus on first input
-                document.getElementById('class_name').focus();
             } else {
                 form.style.display = 'none';
                 toggleBtn.innerHTML = '<i class="fas fa-plus"></i> Add Class';
-                // Reset form
                 document.querySelector('.class-form').reset();
+                document.getElementById('lecturer_name').value = '';
+                document.getElementById('lecturer_id').value = '';
             }
         }
         
@@ -510,13 +534,13 @@ $active_classes = count(array_filter($classes, function($class) { return $class[
         
         // Form validation
         document.querySelector('.class-form').addEventListener('submit', function(e) {
-            const className = document.getElementById('class_name').value.trim();
+            const subjectId = document.getElementById('subject_id').value.trim();
             const classCode = document.getElementById('class_code').value.trim();
-            const instructor = document.getElementById('instructor_name').value.trim();
+            const lecturer = document.getElementById('lecturer_name').value.trim();
             
-            if (!className || !classCode || !instructor) {
+            if (!subjectId || !classCode || !lecturer) {
                 e.preventDefault();
-                alert('Please fill in all required fields: Class Name, Class Code, and Instructor.');
+                alert('Please fill in all required fields: Subject, Class Code, and Lecturer.');
                 return false;
             }
             
@@ -530,8 +554,6 @@ $active_classes = count(array_filter($classes, function($class) { return $class[
         
         // Initialize event listeners
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('toggleForm').addEventListener('click', toggleForm);
-            
             // Auto-hide alerts after 5 seconds
             const alerts = document.querySelectorAll('.alert');
             alerts.forEach(alert => {

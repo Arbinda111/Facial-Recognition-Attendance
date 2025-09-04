@@ -64,29 +64,26 @@ $lecturers = $stmt->fetchAll();
     <title>Add Lecturer - Full Attend</title>
     <link rel="stylesheet" href="admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .admin-main {
+            flex: 1;
+            padding: 20px;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+    </style>
 </head>
 <body>
+
     <div class="admin-container">
         <?php include 'includes/sidebar.php'; ?>
-        
         <!-- Main Content -->
         <main class="admin-main">
             <header class="dashboard-header">
                 <div class="header-left">
                     <h1>Lecturer Management</h1>
                     <p>Add and manage teaching staff</p>
-                    <?php if (!empty($success_message)): ?>
-                        <div class="alert alert-success">
-                            <i class="fas fa-check-circle"></i>
-                            <?php echo $success_message; ?>
-                        </div>
-                    <?php endif; ?>
-                    <?php if (!empty($error_message)): ?>
-                        <div class="alert alert-error">
-                            <i class="fas fa-exclamation-circle"></i>
-                            <?php echo $error_message; ?>
-                        </div>
-                    <?php endif; ?>
                 </div>
                 <div class="header-right">
                     <div class="date-info">
@@ -102,56 +99,48 @@ $lecturers = $stmt->fetchAll();
                     <div class="form-tabs">
                         <button class="tab-btn active">REGISTER</button>
                     </div>
-                    
                     <div class="register-form">
                         <h2>REGISTER NEW LECTURER</h2>
-                        
                         <?php if (!empty($success_message)): ?>
                             <div class="success-message">
                                 <i class="fas fa-check-circle"></i>
                                 <?php echo htmlspecialchars($success_message); ?>
                             </div>
                         <?php endif; ?>
-                        
                         <?php if (!empty($error_message)): ?>
                             <div class="error-message">
                                 <i class="fas fa-exclamation-circle"></i>
                                 <?php echo htmlspecialchars($error_message); ?>
                             </div>
                         <?php endif; ?>
-                        
                         <form method="POST" action="">
                             <div class="form-group">
                                 <label for="name">NAME</label>
                                 <div class="input-container">
-                                    <input type="text" id="name" name="name" placeholder="Dr. John Smith" 
-                                           value="<?php echo isset($name) ? htmlspecialchars($name) : ''; ?>" required>
+                                    <input type="text" id="name" name="name" placeholder="Dr. John Smith" value="<?php echo isset($name) ? htmlspecialchars($name) : ''; ?>" required>
                                 </div>
                             </div>
-                            
                             <div class="form-group">
                                 <label for="email">LECTURER E-MAIL</label>
                                 <div class="input-container">
-                                    <input type="email" id="email" name="email" placeholder="lecturer@cihe.edu" 
-                                           value="<?php echo isset($email) ? htmlspecialchars($email) : ''; ?>" required>
+                                    <input type="email" id="email" name="email" placeholder="lecturer@cihe.edu" value="<?php echo isset($email) ? htmlspecialchars($email) : ''; ?>" required>
                                 </div>
                             </div>
-                            
                             <div class="form-group">
                                 <label for="password">PASSWORD</label>
                                 <div class="input-container">
                                     <input type="password" id="password" name="password" placeholder="Create Password" required>
                                 </div>
                             </div>
-                            
                             <button type="submit" class="create-account-btn">CREATE ACCOUNT</button>
                         </form>
-                        
+                        <div class="form-footer">
+                            <p>Need to view existing lecturers? <a href="lecturer_dashboard.php">Lecturer Directory</a></p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            
             <!-- Lecturers List Section -->
             <div class="table-container">
                 <div class="table-header">
@@ -165,7 +154,6 @@ $lecturers = $stmt->fetchAll();
                         </select>
                     </div>
                 </div>
-                
                 <div class="table-content">
                     <?php if (empty($lecturers)): ?>
                         <div class="empty-state">
@@ -174,7 +162,7 @@ $lecturers = $stmt->fetchAll();
                             <small>Register the first lecturer using the form above</small>
                         </div>
                     <?php else: ?>
-                        <table class="data-table">
+                        <table class="data-table" style=" overflow-x: auto;">
                             <thead>
                                 <tr>
                                     <th>ID</th>
@@ -214,9 +202,7 @@ $lecturers = $stmt->fetchAll();
                                                 <button class="btn btn-sm" onclick="editLecturer(<?php echo $lecturer['id']; ?>)" title="Edit">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-                                                <button class="btn btn-sm <?php echo ($lecturer['status'] ?? 'active') === 'active' ? 'btn-warning' : 'btn-success'; ?>" 
-                                                        onclick="toggleStatus(<?php echo $lecturer['id']; ?>)" 
-                                                        title="<?php echo ($lecturer['status'] ?? 'active') === 'active' ? 'Deactivate' : 'Activate'; ?>">
+                                                <button class="btn btn-sm <?php echo ($lecturer['status'] ?? 'active') === 'active' ? 'btn-warning' : 'btn-success'; ?>" onclick="toggleStatus(<?php echo $lecturer['id']; ?>)" title="<?php echo ($lecturer['status'] ?? 'active') === 'active' ? 'Deactivate' : 'Activate'; ?>">
                                                     <i class="fas fa-toggle-<?php echo ($lecturer['status'] ?? 'active') === 'active' ? 'on' : 'off'; ?>"></i>
                                                 </button>
                                             </div>
