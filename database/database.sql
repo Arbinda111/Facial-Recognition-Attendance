@@ -44,6 +44,8 @@ CREATE TABLE IF NOT EXISTS students (
 -- Classes table
 CREATE TABLE IF NOT EXISTS classes (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    subject_id INT NOT NULL,
+    lecturer_id INT NULL,
     class_name VARCHAR(100) NOT NULL,
     class_code VARCHAR(20) UNIQUE NOT NULL,
     description TEXT,
@@ -69,23 +71,17 @@ CREATE TABLE IF NOT EXISTS sessions (
     created_by INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
-    FOREIGN KEY (created_by) REFERENCES admin(id) ON DELETE CASCADE
 );
 
--- Student class enrollments
 CREATE TABLE IF NOT EXISTS student_enrollments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
     class_id INT NOT NULL,
     enrollment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status ENUM('enrolled', 'dropped', 'completed') DEFAULT 'enrolled',
-    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
     UNIQUE KEY unique_enrollment (student_id, class_id)
 );
 
--- Attendance records
 CREATE TABLE IF NOT EXISTS attendance (
     id INT AUTO_INCREMENT PRIMARY KEY,
     session_id INT NOT NULL,
@@ -96,9 +92,6 @@ CREATE TABLE IF NOT EXISTS attendance (
     marked_by INT NULL, -- admin id if manually marked
     confidence_score DECIMAL(5,4) NULL, -- for face recognition confidence
     notes TEXT,
-    FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,
-    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-    FOREIGN KEY (marked_by) REFERENCES admin(id) ON DELETE SET NULL,
     UNIQUE KEY unique_attendance (session_id, student_id)
 );
 
@@ -110,10 +103,8 @@ CREATE TABLE IF NOT EXISTS system_settings (
     description TEXT,
     updated_by INT NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (updated_by) REFERENCES admin(id) ON DELETE CASCADE
 );
 
--- Face recognition logs
 CREATE TABLE IF NOT EXISTS face_recognition_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT,
@@ -121,9 +112,37 @@ CREATE TABLE IF NOT EXISTS face_recognition_logs (
     recognition_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     confidence_score DECIMAL(5,4),
     status ENUM('success', 'failed', 'low_confidence') DEFAULT 'success',
-    image_path VARCHAR(255),
-    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-    FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+    image_path VARCHAR(255)
+);
+
+-- Subjects table
+CREATE TABLE IF NOT EXISTS subjects (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    subject_name VARCHAR(100) NOT NULL,
+    subject_code VARCHAR(20) UNIQUE NOT NULL,
+    description TEXT,
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS lecturer_subjects (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    lecturer_id INT NOT NULL,
+    subject_id INT NOT NULL,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_assignment (lecturer_id, subject_id)
+);
+
+-- Lecturer-Student-Class-Subject direct relation
+CREATE TABLE IF NOT EXISTS lecturer_student_enrollments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    lecturer_id INT NOT NULL,
+    student_id INT NOT NULL,
+    class_id INT NOT NULL,
+    subject_id INT NOT NULL,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_lecturer_student_class (lecturer_id, student_id, class_id, subject_id)
 );
 
 -- Insert default admin user
@@ -138,10 +157,12 @@ INSERT INTO system_settings (setting_name, setting_value, description, updated_b
 ('system_timezone', 'Asia/Kolkata', 'Default system timezone', 1);
 
 -- Insert sample classes
-INSERT INTO classes (class_name, class_code, description, instructor_name, semester, academic_year) VALUES
-('Computer Science Fundamentals', 'CS101', 'Introduction to Computer Science', 'Dr. Smith', 'Fall 2025', '2025-26'),
-('Database Management Systems', 'CS201', 'Database design and implementation', 'Prof. Johnson', 'Fall 2025', '2025-26'),
-('Web Development', 'CS301', 'Full stack web development', 'Dr. Brown', 'Fall 2025', '2025-26');
+-- You must update these sample rows with valid subject_id and lecturer_id after creating subjects and lecturer_subjects
+-- Example:
+-- INSERT INTO classes (subject_id, lecturer_id, class_name, class_code, description, instructor_name, semester, academic_year) VALUES
+-- (1, 1, 'Computer Science Fundamentals', 'CS101', 'Introduction to Computer Science', 'Dr. Smith', 'Fall 2025', '2025-26'),
+-- (2, 2, 'Database Management Systems', 'CS201', 'Database design and implementation', 'Prof. Johnson', 'Fall 2025', '2025-26'),
+-- (3, 3, 'Web Development', 'CS301', 'Full stack web development', 'Dr. Brown', 'Fall 2025', '2025-26');
 
 -- Create indexes for better performance
 CREATE INDEX idx_students_student_id ON students(student_id);
