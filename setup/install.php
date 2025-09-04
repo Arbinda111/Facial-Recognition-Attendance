@@ -7,7 +7,7 @@ ini_set('display_errors', 1);
 $host = 'localhost';
 $port = '3306';
 $username = 'root';
-$password = '';
+$password = 'root';
 $database = 'face_recog';
 
 try {
