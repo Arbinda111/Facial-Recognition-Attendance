@@ -5,7 +5,7 @@
   -webkit-overflow-scrolling: touch;
 }
 .timetable-grid.timetable-table {
-  min-width: 900px;
+  min-width: 800px;
   width: max-content;
   display: block;
 }
