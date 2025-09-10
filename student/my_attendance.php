@@ -14,6 +14,7 @@ $student_name = $_SESSION['student_name'];
 // Get attendance statistics
 $stats = [];
 
+
 // Total attendance records
 $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM attendance WHERE student_id = ?");
 $stmt->execute([$student_id]);
