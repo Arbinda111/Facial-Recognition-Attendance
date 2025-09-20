@@ -10,21 +10,67 @@ if (!isset($_SESSION['lecturer_logged_in']) || $_SESSION['lecturer_logged_in'] !
 
 // Get dashboard statistics
 $stats = [];
+$lecturer_id = $_SESSION['lecturer_id'];
 
-// Total students
-$stmt = $pdo->prepare("SELECT COUNT(*) as count FROM students WHERE status = 'active'");
-$stmt->execute();
+// Debug: Ensure we have a valid lecturer_id
+if (!$lecturer_id) {
+    error_log("Warning: No lecturer_id found in session");
+    $lecturer_id = 0; // Fallback to prevent SQL errors
+}
+
+// Total students enrolled under this lecturer
+$stmt = $pdo->prepare("
+    SELECT COUNT(*) as count 
+    FROM lecturer_student_enrollments lse 
+    JOIN students s ON lse.student_id = s.id 
+    WHERE lse.lecturer_id = ? AND s.status = 'active'
+");
+$stmt->execute([$lecturer_id]);
 $stats['total_students'] = $stmt->fetch()['count'];
 
-// Today's attendance
-$today = date('Y-m-d');
-$stmt = $pdo->prepare("SELECT COUNT(DISTINCT student_id) as count FROM attendance WHERE DATE(attendance_time) = ?");
-$stmt->execute([$today]);
+// Today's attendance from attendance_student table for students under this lecturer
+// Join with students table to match student_id strings, then filter by lecturer enrollment
+$stmt = $pdo->prepare("
+    SELECT COUNT(DISTINCT att.student_id) as count 
+    FROM attendance_student att
+    JOIN students s ON s.student_id = att.student_id
+    JOIN lecturer_student_enrollments lse ON lse.student_id = s.id
+    WHERE lse.lecturer_id = ?
+    AND s.status = 'active'
+");
+$stmt->execute([$lecturer_id]);
 $stats['today_attendance'] = $stmt->fetch()['count'];
 
-// Students with face registered
-$stmt = $pdo->prepare("SELECT COUNT(*) as count FROM students WHERE face_encoding IS NOT NULL AND face_encoding != ''");
-$stmt->execute();
+// Debug: Log attendance query results
+error_log("Lecturer Dashboard - Lecturer ID: " . $lecturer_id);
+error_log("Lecturer Dashboard - Today's attendance count: " . $stats['today_attendance']);
+
+// Debug: Show which students have attendance records under this lecturer
+$debug_stmt = $pdo->prepare("
+    SELECT DISTINCT att.student_id, att.name, s.student_id as students_table_id
+    FROM attendance_student att
+    JOIN students s ON s.student_id = att.student_id
+    JOIN lecturer_student_enrollments lse ON lse.student_id = s.id
+    WHERE lse.lecturer_id = ?
+    AND s.status = 'active'
+    LIMIT 5
+");
+$debug_stmt->execute([$lecturer_id]);
+$debug_results = $debug_stmt->fetchAll();
+foreach ($debug_results as $debug_row) {
+    error_log("Lecturer Dashboard - Student with attendance: " . $debug_row['student_id'] . " (Name: " . $debug_row['name'] . ", Students table ID: " . $debug_row['students_table_id'] . ")");
+}
+
+// Students with face registered under this lecturer
+$stmt = $pdo->prepare("
+    SELECT COUNT(*) as count 
+    FROM lecturer_student_enrollments lse 
+    JOIN students s ON lse.student_id = s.id 
+    WHERE lse.lecturer_id = ? 
+    AND s.face_encoding IS NOT NULL 
+    AND s.face_encoding != ''
+");
+$stmt->execute([$lecturer_id]);
 $stats['face_registered'] = $stmt->fetch()['count'];
 
 // Today's date info
@@ -70,7 +116,6 @@ $stats['current_time'] = date('g:i A');
             <div class="date-time-card">
                 <div class="date-info">
                     <h3><?php echo $stats['today_date']; ?></h3>
-                    <p class="current-time"><?php echo $stats['current_time']; ?></p>
                 </div>
             </div>
 
@@ -83,6 +128,7 @@ $stats['current_time'] = date('g:i A');
                     <div class="stat-content">
                         <h3><?php echo $stats['total_students']; ?></h3>
                         <p>Total Students</p>
+                        <small style="color: #6c757d; font-size: 12px;">Enrolled in your classes</small>
                     </div>
                 </div>
 
@@ -93,6 +139,7 @@ $stats['current_time'] = date('g:i A');
                     <div class="stat-content">
                         <h3><?php echo $stats['today_attendance']; ?></h3>
                         <p>Today's Attendance</p>
+                        <small style="color: #6c757d; font-size: 12px;">Students marked present today</small>
                     </div>
                 </div>
 
@@ -103,18 +150,11 @@ $stats['current_time'] = date('g:i A');
                     <div class="stat-content">
                         <h3><?php echo $stats['face_registered']; ?></h3>
                         <p>Face Registered</p>
+                        <small style="color: #6c757d; font-size: 12px;">Ready for face recognition</small>
                     </div>
                 </div>
 
-                <div class="stat-card info">
-                    <div class="stat-icon">
-                        <i class="fas fa-percentage"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3><?php echo $stats['total_students'] > 0 ? round(($stats['today_attendance'] / $stats['total_students']) * 100) : 0; ?>%</h3>
-                        <p>Attendance Rate</p>
-                    </div>
-                </div>
+               
             </div>
 
             <!-- Quick Actions -->
