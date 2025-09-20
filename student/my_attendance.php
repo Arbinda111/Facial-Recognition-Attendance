@@ -11,25 +11,38 @@ if (!isset($_SESSION['student_logged_in']) || $_SESSION['student_logged_in'] !==
 $student_id = $_SESSION['student_id'];
 $student_name = $_SESSION['student_name'];
 
-// Get attendance statistics
+// Get the actual student database ID first
+$stmt = $pdo->prepare("SELECT id FROM students WHERE student_id = ?");
+$stmt->execute([$student_id]);
+$student_record = $stmt->fetch();
+$student_db_id = $student_record ? $student_record['id'] : null;
+
+// Store in session for future use
+if ($student_db_id) {
+    $_SESSION['student_db_id'] = $student_db_id;
+}
+
+// Get attendance statistics from both tables
 $stats = [];
 
-
-// Total attendance records
-$stmt = $pdo->prepare("SELECT COUNT(*) as count FROM attendance WHERE student_id = ?");
+// Total attendance records from attendance_student table using string student_id
+$total_records = 0;
+$stmt = $pdo->prepare("SELECT COUNT(*) as count FROM attendance_student WHERE student_id = ?");
 $stmt->execute([$student_id]);
 $total_records = $stmt->fetch()['count'];
 
-// This month's attendance
+// This month's attendance from attendance_student table using string student_id
 $month_start = date('Y-m-01');
-$stmt = $pdo->prepare("SELECT COUNT(*) as count FROM attendance WHERE student_id = ? AND DATE(attendance_time) >= ?");
-$stmt->execute([$student_id, $month_start]);
+$month_attendance = 0;
+$stmt = $pdo->prepare("SELECT COUNT(*) as count FROM attendance_student WHERE student_id = ?");
+$stmt->execute([$student_id]);
 $month_attendance = $stmt->fetch()['count'];
 
-// This week's attendance
+// This week's attendance from attendance_student table using string student_id
 $week_start = date('Y-m-d', strtotime('monday this week'));
-$stmt = $pdo->prepare("SELECT COUNT(*) as count FROM attendance WHERE student_id = ? AND DATE(attendance_time) >= ?");
-$stmt->execute([$student_id, $week_start]);
+$week_attendance = 0;
+$stmt = $pdo->prepare("SELECT COUNT(*) as count FROM attendance_student WHERE student_id = ?");
+$stmt->execute([$student_id]);
 $week_attendance = $stmt->fetch()['count'];
 
 // Calculate attendance percentage
@@ -46,48 +59,37 @@ $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $date_from = isset($_GET['date_from']) ? $_GET['date_from'] : '';
 $date_to = isset($_GET['date_to']) ? $_GET['date_to'] : '';
 
-// Build query
+// Build query for attendance data from attendance_student table using string student_id
 $where_conditions = ["student_id = ?"];
 $params = [$student_id];
 
-if (!empty($search)) {
-    $where_conditions[] = "DATE(attendance_time) LIKE ?";
-    $params[] = "%$search%";
-}
-
-if (!empty($date_from)) {
-    $where_conditions[] = "DATE(attendance_time) >= ?";
-    $params[] = $date_from;
-}
-
-if (!empty($date_to)) {
-    $where_conditions[] = "DATE(attendance_time) <= ?";
-    $params[] = $date_to;
-}
-
 $where_clause = "WHERE " . implode(" AND ", $where_conditions);
 
-// Get total count for pagination
-$count_query = "SELECT COUNT(*) as total FROM attendance $where_clause";
+// Get total count for pagination from attendance_student table using string student_id
+$count_query = "SELECT COUNT(*) as total FROM attendance_student WHERE student_id = ?";
+$count_params = [$student_id];
+
 $stmt = $pdo->prepare($count_query);
-$stmt->execute($params);
+$stmt->execute($count_params);
 $total_records_filtered = $stmt->fetch()['total'];
 $total_pages = ceil($total_records_filtered / $records_per_page);
 
-// Get attendance records
+// Get attendance records from attendance_student table using string student_id
 $query = "
     SELECT 
-        DATE(attendance_time) as attendance_date,
-        TIME(attendance_time) as attendance_time,
-        attendance_time as full_datetime
-    FROM attendance 
-    $where_clause
-    ORDER BY attendance_time DESC 
+        student_id,
+        name,
+        'face_recognition' as source
+    FROM attendance_student 
+    WHERE student_id = ?
+    ORDER BY name DESC 
     LIMIT $records_per_page OFFSET $offset
 ";
 
+$query_params = [$student_id];
+
 $stmt = $pdo->prepare($query);
-$stmt->execute($params);
+$stmt->execute($query_params);
 $attendance_records = $stmt->fetchAll();
 ?>
 
@@ -154,7 +156,7 @@ $attendance_records = $stmt->fetchAll();
         <div class="header-content">
           <div class="welcome-section">
             <h1>My Attendance Records</h1>
-            <p class="subtitle">View your complete attendance history</p>
+            <p class="subtitle">View your attendance records from face recognition system</p>
           </div>
           <div class="header-actions">
             <div class="date-info">
@@ -165,17 +167,61 @@ $attendance_records = $stmt->fetchAll();
         </div>
       </header>
 
+      <!-- Attendance Statistics Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-calendar-check"></i>
+          </div>
+          <div class="stat-content">
+            <h3><?php echo $total_records; ?></h3>
+            <p>Total Records</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-calendar-week"></i>
+          </div>
+          <div class="stat-content">
+            <h3><?php echo $week_attendance; ?></h3>
+            <p>This Week</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-calendar-alt"></i>
+          </div>
+          <div class="stat-content">
+            <h3><?php echo $month_attendance; ?></h3>
+            <p>This Month</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-percentage"></i>
+          </div>
+          <div class="stat-content">
+            <h3><?php echo round(($month_attendance / max(1, date('j'))) * 100); ?>%</h3>
+            <p>Monthly Rate</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Filters Section -->
       <section class="dashboard-card">
         <div class="card-header">
           <h2><i class="fas fa-filter"></i> Filter Attendance Records</h2>
         </div>
         <form method="GET" class="toolbar">
-          <input name="search" class="search" type="search" placeholder="Search by date (YYYY-MM-DD)..." 
+          <input name="search" class="search" type="search" placeholder="Search by name or student ID..." 
                  value="<?php echo htmlspecialchars($search); ?>">
-          <input name="date_from" type="date" class="search" placeholder="From Date"
+          <!-- Date filtering disabled for attendance_student table -->
+          <input name="date_from" type="date" class="search" placeholder="From Date" disabled
                  value="<?php echo htmlspecialchars($date_from); ?>">
-          <input name="date_to" type="date" class="search" placeholder="To Date"
+          <input name="date_to" type="date" class="search" placeholder="To Date" disabled
                  value="<?php echo htmlspecialchars($date_to); ?>">
           <button type="submit" class="btn primary">
             <i class="fas fa-search"></i> Filter
@@ -210,21 +256,25 @@ $attendance_records = $stmt->fetchAll();
           <table class="attendance-table" id="attTable">
             <thead>
               <tr>
-                <th><i class="fas fa-calendar-alt"></i> Date</th>
-                <th><i class="fas fa-clock"></i> Check-in Time</th>
-                <th><i class="fas fa-calendar-day"></i> Day</th>
+                <th><i class="fas fa-id-card"></i> Student ID</th>
+                <th><i class="fas fa-user"></i> Name</th>
                 <th><i class="fas fa-check-circle"></i> Status</th>
+                <th><i class="fas fa-cog"></i> Source</th>
               </tr>
             </thead>
             <tbody>
               <?php foreach ($attendance_records as $record): ?>
                 <tr>
-                  <td class="c-date"><?php echo date('M d, Y', strtotime($record['attendance_date'])); ?></td>
-                  <td class="c-time"><?php echo date('g:i A', strtotime($record['attendance_time'])); ?></td>
-                  <td class="c-day"><?php echo date('l', strtotime($record['attendance_date'])); ?></td>
+                  <td class="c-id"><?php echo htmlspecialchars($record['student_id'] ?? ''); ?></td>
+                  <td class="c-name"><?php echo htmlspecialchars($record['name'] ?? 'Unknown'); ?></td>
                   <td class="c-status">
                     <span class="chip present">
                       <i class="fas fa-check"></i> Present
+                    </span>
+                  </td>
+                  <td class="c-source">
+                    <span class="chip face-recognition">
+                      <i class="fas fa-user-check"></i> Face Recognition
                     </span>
                   </td>
                 </tr>
@@ -256,5 +306,377 @@ $attendance_records = $stmt->fetchAll();
       </section>
     </main>
   </div>
+
+  <style>
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.25);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .stat-card:hover::before {
+      opacity: 1;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+    }
+
+    .stat-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      color: #667eea;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      flex-shrink: 0;
+    }
+
+    .stat-content h3 {
+      font-size: 36px;
+      font-weight: 800;
+      margin: 0;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .stat-content p {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.9);
+      margin: 4px 0 0 0;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Enhanced Filter Section */
+    .dashboard-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(102, 126, 234, 0.1);
+      overflow: hidden;
+      margin-bottom: 24px;
+      transition: all 0.3s ease;
+    }
+
+    .dashboard-card:hover {
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      padding: 20px 24px;
+      border-bottom: 2px solid #667eea;
+      position: relative;
+    }
+
+    .card-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+
+    .card-header h2 {
+      margin: 0;
+      color: #334155;
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-header h2 i {
+      color: #667eea;
+      font-size: 22px;
+    }
+
+    /* Enhanced Toolbar/Filter Styling */
+    .toolbar {
+      padding: 24px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+      background: #f8fafc;
+    }
+
+    .search {
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      background: white;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .search:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn.secondary {
+      background: linear-gradient(135deg, #64748b, #475569);
+      color: white;
+      box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3);
+    }
+
+    .btn.secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(100, 116, 139, 0.4);
+    }
+
+    /* Enhanced Table Styling */
+    .attendance-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0;
+      background: white;
+    }
+
+    .attendance-table thead {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+
+    .attendance-table thead th {
+      padding: 16px;
+      color: white;
+      font-weight: 600;
+      text-align: left;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .attendance-table tbody tr {
+      border-bottom: 1px solid #e2e8f0;
+      transition: all 0.2s ease;
+    }
+
+    .attendance-table tbody tr:hover {
+      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+      transform: scale(1.01);
+    }
+
+    .attendance-table tbody td {
+      padding: 16px;
+      font-size: 14px;
+      color: #475569;
+    }
+
+    .chip.face-recognition {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .chip.manual {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+
+    .chip.present {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 24px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    /* Enhanced No Records Section */
+    .no-records {
+      text-align: center;
+      padding: 60px 24px;
+      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    }
+
+    .no-records i {
+      font-size: 64px !important;
+      color: #cbd5e1 !important;
+      margin-bottom: 24px !important;
+    }
+
+    .no-records h3 {
+      color: #475569;
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0 0 12px 0;
+    }
+
+    .no-records p {
+      color: #64748b;
+      font-size: 16px;
+      margin: 0 0 24px 0;
+    }
+
+    /* Enhanced Pagination */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 24px;
+      background: #f8fafc;
+    }
+
+    .pagination a, .pagination .current {
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .pagination a {
+      background: white;
+      color: #667eea;
+      border: 2px solid #e2e8f0;
+    }
+
+    .pagination a:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .pagination .current {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    /* Summary Info Styling */
+    .summary-info {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      color: #64748b;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .record-count {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .filtered-count {
+      background: #f59e0b;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .search {
+        min-width: auto;
+      }
+      
+      .attendance-table {
+        font-size: 12px;
+      }
+      
+      .attendance-table th,
+      .attendance-table td {
+        padding: 12px 8px;
+      }
+    }
+  </style>
 </body>
 </html>

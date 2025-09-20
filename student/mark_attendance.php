@@ -11,17 +11,72 @@ if (!isset($_SESSION['student_logged_in']) || $_SESSION['student_logged_in'] !==
 $student_id = $_SESSION['student_id'];
 $student_name = $_SESSION['student_name'];
 
+// Get database connection
+$pdo = getDBConnection();
+
+// Get the actual database ID of the current student
+$student_db_id = null;
+try {
+    $stmt = $pdo->prepare("SELECT id FROM students WHERE student_id = ?");
+    $stmt->execute([$student_id]);
+    $student_record = $stmt->fetch();
+    if ($student_record) {
+        $student_db_id = $student_record['id'];
+    }
+} catch (PDOException $e) {
+    $error_message = 'Error fetching student ID: ' . $e->getMessage();
+}
+
+// Check for current active session for this student
+$current_session = null;
+$current_time = date('H:i:s');
+$today = date('Y-m-d');
+
+if ($student_db_id) {
+    try {
+        // Find active session for this student right now
+        $stmt = $pdo->prepare("
+            SELECT 
+                s.*,
+                c.class_name,
+                c.class_code,
+                sub.subject_name,
+                sub.subject_code,
+                l.name as lecturer_name
+            FROM sessions s
+            JOIN classes c ON s.class_id = c.id
+            JOIN lecturer_student_enrollments lse ON (
+                (c.id = lse.class_id AND c.subject_id = lse.subject_id) OR
+                (lse.class_id = 0 AND c.subject_id = lse.subject_id AND c.lecturer_id = lse.lecturer_id)
+            )
+            JOIN subjects sub ON lse.subject_id = sub.id
+            JOIN lecturers l ON lse.lecturer_id = l.id
+            WHERE s.session_date = ?
+            AND s.start_time <= ?
+            AND s.end_time >= ?
+            AND s.status IN ('scheduled', 'ongoing')
+            AND lse.student_id = ?
+            ORDER BY s.start_time
+            LIMIT 1
+        ");
+        $stmt->execute([$today, $current_time, $current_time, $student_db_id]);
+        $current_session = $stmt->fetch();
+    } catch (PDOException $e) {
+        $error_message = 'Error fetching current session: ' . $e->getMessage();
+    }
+}
+
 // Get recent attendance records
 $stmt = $pdo->prepare("
     SELECT a.*, s.session_name, c.class_name 
     FROM attendance a 
     JOIN sessions s ON a.session_id = s.id 
     JOIN classes c ON s.class_id = c.id 
-    WHERE a.student_id = (SELECT id FROM students WHERE student_id = ?) 
+    WHERE a.student_id = ? 
     ORDER BY a.attendance_time DESC 
     LIMIT 5
 ");
-$stmt->execute([$student_id]);
+$stmt->execute([$student_db_id]);
 $recent_attendance = $stmt->fetchAll();
 ?>
 
@@ -207,6 +262,28 @@ $recent_attendance = $stmt->fetchAll();
             0% { opacity: 1; }
             50% { opacity: 0.5; }
             100% { opacity: 1; }
+        }
+        
+        .auto-starting {
+            animation: pulse 1s infinite;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+            color: white !important;
+        }
+        
+        .countdown-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #28a745;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
         .camera-controls {
@@ -488,25 +565,78 @@ $recent_attendance = $stmt->fetchAll();
                         <p><strong>Student:</strong> <?php echo htmlspecialchars($student_name); ?> (<?php echo htmlspecialchars($student_id); ?>)</p>
                     </div>
 
-                    <div class="mode-toggle">
+                    <!-- Current Session Info -->
+                    <div class="session-info">
+                        <?php if ($current_session): ?>
+                            <div class="message success">
+                                <i class="fas fa-clock"></i>
+                                <strong>Current Session:</strong> <?php echo htmlspecialchars($current_session['session_name']); ?> 
+                                (<?php echo htmlspecialchars($current_session['subject_name']); ?>)
+                                <br>
+                                <small>
+                                    <i class="fas fa-user"></i> <?php echo htmlspecialchars($current_session['lecturer_name']); ?> | 
+                                    <i class="fas fa-calendar"></i> <?php echo date('M d, Y'); ?> | 
+                                    <i class="fas fa-clock"></i> <?php echo date('g:i A', strtotime($current_session['start_time'])) . ' - ' . date('g:i A', strtotime($current_session['end_time'])); ?>
+                                </small>
+                            </div>
+                        <?php else: ?>
+                            <div class="message info">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>No Active Session:</strong> There is no active session right now according to your timetable.
+                                <br>
+                                <small>The camera will automatically open when you have an active session.</small>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Hidden test mode toggle - functionality preserved for backend -->
+                    <div class="mode-toggle" style="display: none;">
                         <label class="toggle-label">
                             <input type="checkbox" id="testMode">
                             <span class="toggle-slider"></span>
                             Test Mode (Detailed Analysis)
                         </label>
                     </div>
+                        </label>
+                    </div>
 
                     <div class="capture-section">
-                        <div id="startCapture" class="start-capture">
-                            <h3><i class="fas fa-camera"></i> Ready to Mark Attendance?</h3>
-                            <p class="instruction">Choose your preferred method to capture your photo</p>
-                            <button onclick="startCamera()" class="start-camera-btn">
-                                <i class="fas fa-camera"></i> Start Camera
-                            </button>
-                            <button onclick="startAutoCapture()" class="start-camera-btn" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
-                                <i class="fas fa-magic"></i> Start Auto-Capture
-                            </button>
-                        </div>
+                        <?php if ($current_session): ?>
+                            <!-- Automatic camera for active session -->
+                            <div id="startCapture" class="start-capture">
+                                <h3><i class="fas fa-magic"></i> Auto-Starting for Current Session</h3>
+                                <p class="instruction">
+                                    <i class="fas fa-clock"></i> Camera is starting automatically for your active session...<br>
+                                    <strong>Get Ready!</strong> Position yourself in front of the camera.
+                                </p>
+                                <div id="attendanceInstructions" style="margin-top: 15px; padding: 15px; background: #d4edda; border-radius: 10px; font-size: 14px; border: 1px solid #c3e6cb;">
+                                    <i class="fas fa-check-circle"></i> <strong>Auto-Attendance Active:</strong><br>
+                                    • Camera opens automatically when session is running<br>
+                                    • No manual action required - just get ready<br>
+                                    • System will detect and mark your attendance<br>
+                                    • Attendance recorded for: <strong><?php echo htmlspecialchars($current_session['session_name']); ?></strong>
+                                </div>
+                                <!-- Manual start button as backup -->
+                                <button onclick="startAutoCapture()" class="start-camera-btn" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); margin-top: 15px;">
+                                    <i class="fas fa-magic"></i> Manual Start (if needed)
+                                </button>
+                            </div>
+                        <?php else: ?>
+                            <!-- Manual camera when no active session -->
+                            <div id="startCapture" class="start-capture">
+                                <h3><i class="fas fa-camera"></i> No Active Session</h3>
+                                <p class="instruction">Manual attendance capture is available</p>
+                                <button onclick="startCamera()" class="start-camera-btn">
+                                    <i class="fas fa-camera"></i> Start Camera
+                                </button>
+                                <button onclick="startAutoCapture()" class="start-camera-btn" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                                    <i class="fas fa-magic"></i> Start Auto-Capture
+                                </button>
+                                <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 10px; font-size: 14px;">
+                                    <i class="fas fa-exclamation-triangle"></i> <strong>Note:</strong> Camera opens manually since no session is currently active. Check your timetable for scheduled sessions.
+                                </div>
+                            </div>
+                        <?php endif; ?>
 
                         <div id="cameraSection" class="camera-section" style="display: none;">
                             <div class="camera-instructions">
@@ -623,6 +753,44 @@ $recent_attendance = $stmt->fetchAll();
         let isAutoCapturing = false;
         let autoInterval = null;
         let captureCount = 0;
+        
+        // Current session data from PHP
+        const currentSession = <?php echo json_encode($current_session); ?>;
+        
+        // Auto-start camera when page loads if there's an active session
+        document.addEventListener('DOMContentLoaded', function() {
+            if (currentSession) {
+                // Add visual feedback that auto-start is happening
+                const startCaptureDiv = document.getElementById('startCapture');
+                if (startCaptureDiv) {
+                    startCaptureDiv.classList.add('auto-starting');
+                    const instruction = startCaptureDiv.querySelector('.instruction');
+                    if (instruction) {
+                        instruction.innerHTML = '<span class="countdown-indicator"></span><i class="fas fa-clock"></i> Auto-starting camera in 2 seconds for your active session...<br><strong>Get Ready!</strong> Position yourself in front of the camera.';
+                    }
+                }
+                
+                // Show success message and automatically start camera
+                showMessage('success', '🚀 Active session detected: ' + currentSession.session_name + '. Camera starting automatically...');
+                
+                // Countdown and automatic start
+                let countdown = 2;
+                const countdownInterval = setInterval(function() {
+                    countdown--;
+                    const instruction = document.querySelector('.instruction');
+                    if (instruction) {
+                        if (countdown > 0) {
+                            instruction.innerHTML = '<span class="countdown-indicator"></span><i class="fas fa-clock"></i> Auto-starting camera in ' + countdown + ' second' + (countdown > 1 ? 's' : '') + ' for your active session...<br><strong>Get Ready!</strong> Position yourself in front of the camera.';
+                        } else {
+                            instruction.innerHTML = '<span class="countdown-indicator"></span><i class="fas fa-camera"></i> Starting camera now...';
+                            clearInterval(countdownInterval);
+                            console.log('Auto-starting camera for active session:', currentSession.session_name);
+                            startAutoCapture();
+                        }
+                    }
+                }, 1000);
+            }
+        });
 
         async function startCamera() {
             try {
@@ -904,21 +1072,31 @@ $recent_attendance = $stmt->fetchAll();
 
         async function saveAttendanceToDatabase(result) {
             try {
+                const attendanceData = {
+                    student_id: result.student_id,
+                    confidence: result.confidence,
+                    timestamp: result.timestamp,
+                    method: 'face_recognition'
+                };
+                
+                // Include session ID if there's a current active session
+                if (currentSession && currentSession.id) {
+                    attendanceData.session_id = currentSession.id;
+                    console.log('Saving attendance for active session:', currentSession.session_name);
+                }
+                
                 const response = await fetch('save_attendance.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        student_id: result.student_id,
-                        confidence: result.confidence,
-                        timestamp: result.timestamp,
-                        method: 'face_recognition'
-                    })
+                    body: JSON.stringify(attendanceData)
                 });
                 
                 if (!response.ok) {
                     console.error('Failed to save attendance to database');
+                } else {
+                    console.log('Attendance saved successfully');
                 }
             } catch (error) {
                 console.error('Error saving attendance:', error);
