@@ -30,6 +30,7 @@ $confidence = $input['confidence'] ?? 0;
 $timestamp = $input['timestamp'] ?? date('Y-m-d H:i:s');
 $method = $input['method'] ?? 'face_recognition';
 $lecturer_id = $input['lecturer_id'] ?? $_SESSION['lecturer_id'];
+$session_id = $input['session_id'] ?? null;
 
 try {
     // Get student's internal ID
@@ -59,18 +60,30 @@ try {
         exit();
     }
     
-    // Create a default session if none exists for today
-    $stmt = $pdo->prepare("SELECT id FROM sessions WHERE session_date = ? LIMIT 1");
-    $stmt->execute([$today]);
-    $session = $stmt->fetch();
+    // Use provided session_id or find/create a session
+    if ($session_id) {
+        // Verify the provided session_id belongs to this lecturer
+        $stmt = $pdo->prepare("SELECT s.id FROM sessions s JOIN classes c ON s.class_id = c.id WHERE s.id = ? AND c.lecturer_id = ?");
+        $stmt->execute([$session_id, $lecturer_id]);
+        if (!$stmt->fetch()) {
+            $session_id = null; // Invalid session, fall back to default
+        }
+    }
     
-    if (!$session) {
-        // Create default session
-        $stmt = $pdo->prepare("INSERT INTO sessions (session_name, class_id, session_date, start_time, end_time, created_by) VALUES (?, 1, ?, '09:00:00', '17:00:00', ?)");
-        $stmt->execute(['Daily Attendance - ' . $today, $today, $lecturer_id]);
-        $session_id = $pdo->lastInsertId();
-    } else {
-        $session_id = $session['id'];
+    if (!$session_id) {
+        // Create a default session if none exists for today
+        $stmt = $pdo->prepare("SELECT id FROM sessions WHERE session_date = ? LIMIT 1");
+        $stmt->execute([$today]);
+        $session = $stmt->fetch();
+        
+        if (!$session) {
+            // Create default session
+            $stmt = $pdo->prepare("INSERT INTO sessions (session_name, class_id, session_date, start_time, end_time, created_by) VALUES (?, 1, ?, '09:00:00', '17:00:00', ?)");
+            $stmt->execute(['Daily Attendance - ' . $today, $today, $lecturer_id]);
+            $session_id = $pdo->lastInsertId();
+        } else {
+            $session_id = $session['id'];
+        }
     }
     
     // Save attendance
