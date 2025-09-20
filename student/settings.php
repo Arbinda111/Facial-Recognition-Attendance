@@ -11,6 +11,85 @@ if (!isset($_SESSION['student_logged_in']) || $_SESSION['student_logged_in'] !==
 $student_id = $_SESSION['student_id'];
 $student_name = $_SESSION['student_name'];
 $student_email = $_SESSION['student_email'];
+$student_contact = $_SESSION['student_contact'] ?? '';
+
+// Get the student's complete information from database
+$stmt = $pdo->prepare("SELECT * FROM students WHERE student_id = ?");
+$stmt->execute([$student_id]);
+$student_data = $stmt->fetch();
+
+$message = '';
+$message_type = '';
+
+// Handle form submissions
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['update_profile'])) {
+        $name = trim($_POST['name']);
+        $email = trim($_POST['email']);
+        $contact = trim($_POST['contact']);
+        
+        // Validate inputs
+        if (empty($name) || empty($email)) {
+            $message = 'Name and email are required fields.';
+            $message_type = 'error';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $message = 'Please enter a valid email address.';
+            $message_type = 'error';
+        } else {
+            // Update student information
+            $stmt = $pdo->prepare("UPDATE students SET name = ?, email = ?, contact = ? WHERE student_id = ?");
+            if ($stmt->execute([$name, $email, $contact, $student_id])) {
+                // Update session variables
+                $_SESSION['student_name'] = $name;
+                $_SESSION['student_email'] = $email;
+                $_SESSION['student_contact'] = $contact;
+                
+                // Refresh student data
+                $stmt = $pdo->prepare("SELECT * FROM students WHERE student_id = ?");
+                $stmt->execute([$student_id]);
+                $student_data = $stmt->fetch();
+                
+                $message = 'Profile updated successfully!';
+                $message_type = 'success';
+            } else {
+                $message = 'Error updating profile. Please try again.';
+                $message_type = 'error';
+            }
+        }
+    }
+    
+    if (isset($_POST['change_password'])) {
+        $current_password = $_POST['current_password'];
+        $new_password = $_POST['new_password'];
+        $confirm_password = $_POST['confirm_password'];
+        
+        // Validate current password
+        if (password_verify($current_password, $student_data['password'])) {
+            if ($new_password === $confirm_password) {
+                if (strlen($new_password) >= 8) {
+                    $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+                    $stmt = $pdo->prepare("UPDATE students SET password = ? WHERE student_id = ?");
+                    if ($stmt->execute([$hashed_password, $student_id])) {
+                        $message = 'Password changed successfully!';
+                        $message_type = 'success';
+                    } else {
+                        $message = 'Error changing password. Please try again.';
+                        $message_type = 'error';
+                    }
+                } else {
+                    $message = 'New password must be at least 8 characters long.';
+                    $message_type = 'error';
+                }
+            } else {
+                $message = 'New passwords do not match.';
+                $message_type = 'error';
+            }
+        } else {
+            $message = 'Current password is incorrect.';
+            $message_type = 'error';
+        }
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -87,40 +166,64 @@ $student_email = $_SESSION['student_email'];
         </div>
       </header>
 
+      <!-- Message Display -->
+      <?php if (!empty($message)): ?>
+      <div class="message <?php echo $message_type; ?>">
+        <i class="fas <?php echo $message_type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'; ?>"></i>
+        <?php echo htmlspecialchars($message); ?>
+      </div>
+      <?php endif; ?>
+
       <!-- Profile Section -->
       <section class="dashboard-card">
         <div class="card-header">
           <h2><i class="fas fa-user"></i> Profile Information</h2>
         </div>
-        <form class="settings-form" id="profileForm" action="#">
-          <div class="avatar-section">
-            <div class="avatar-container">
-              <div id="avatar">JD</div>
-            </div>
-            <div class="avatar-info">
-              <h3>Profile Photo</h3>
-              <p>Upload a new profile picture or keep the current one.</p>
-              <input id="avatarInput" type="file" accept="image/*" style="margin-top: 12px;">
-            </div>
-          </div>
-
+        <form class="settings-form" id="profileForm" method="POST">
           <div class="form-row">
             <div class="form-group">
               <label for="name">Full Name</label>
-              <input id="name" type="text" placeholder="Jane Doe" required>
+              <input id="name" name="name" type="text" value="<?php echo htmlspecialchars($student_data['name']); ?>" required>
             </div>
             <div class="form-group">
               <label for="email">Email</label>
-              <input id="email" type="email" placeholder="jane.doe@student.cihe.edu.au" required>
+              <input id="email" name="email" type="email" value="<?php echo htmlspecialchars($student_data['email']); ?>" required>
             </div>
           </div>
 
           <div class="form-group">
-            <label for="phone">Phone</label>
-            <input id="phone" type="tel" placeholder="+61 4xx xxx xxx">
+            <label for="contact">Contact Number</label>
+            <input id="contact" name="contact" type="tel" value="<?php echo htmlspecialchars($student_data['contact'] ?? ''); ?>" placeholder="+61 4xx xxx xxx">
           </div>
 
-          <button type="submit"><i class="fas fa-save"></i> Save Profile</button>
+          <button type="submit" name="update_profile"><i class="fas fa-save"></i> Save Profile</button>
+        </form>
+      </section>
+
+      <!-- Password Change Section -->
+      <section class="dashboard-card">
+        <div class="card-header">
+          <h2><i class="fas fa-lock"></i> Change Password</h2>
+        </div>
+        <form class="settings-form" id="passwordForm" method="POST">
+          <div class="form-group">
+            <label for="current_password">Current Password</label>
+            <input id="current_password" name="current_password" type="password" required>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="new_password">New Password</label>
+              <input id="new_password" name="new_password" type="password" required>
+              <div id="passwordStrength" class="password-strength"></div>
+            </div>
+            <div class="form-group">
+              <label for="confirm_password">Confirm New Password</label>
+              <input id="confirm_password" name="confirm_password" type="password" required>
+            </div>
+          </div>
+
+          <button type="submit" name="change_password"><i class="fas fa-key"></i> Change Password</button>
         </form>
       </section>
 
@@ -132,7 +235,7 @@ $student_email = $_SESSION['student_email'];
     const avatarBox = document.getElementById('avatar');
     const fileIn    = document.getElementById('avatarInput');
     const nameIn    = document.getElementById('name');
-    const newPwdIn  = document.getElementById('new');
+    const newPwdIn  = document.getElementById('new_password');
 
     function setInitials(){
       const n = (nameIn.value||'').trim().split(/\s+/);
@@ -157,7 +260,10 @@ $student_email = $_SESSION['student_email'];
     // Password strength indicator
     function checkPasswordStrength(password) {
       const strengthIndicator = document.getElementById('passwordStrength');
+      if (!strengthIndicator) return;
+      
       let strength = 0;
+      let strengthText = '';
       
       if (password.length >= 8) strength++;
       if (/[a-z]/.test(password)) strength++;
@@ -168,69 +274,115 @@ $student_email = $_SESSION['student_email'];
       strengthIndicator.className = 'password-strength';
       if (strength <= 2) {
         strengthIndicator.classList.add('weak');
+        strengthText = 'Weak';
       } else if (strength <= 3) {
         strengthIndicator.classList.add('medium');
+        strengthText = 'Medium';
       } else {
         strengthIndicator.classList.add('strong');
+        strengthText = 'Strong';
       }
+      
+      strengthIndicator.textContent = password.length > 0 ? `Password strength: ${strengthText}` : '';
     }
 
-    newPwdIn.addEventListener('input', e => {
-      checkPasswordStrength(e.target.value);
-    });
+    if (newPwdIn) {
+      newPwdIn.addEventListener('input', e => {
+        checkPasswordStrength(e.target.value);
+      });
+    }
 
-    document.getElementById('pwdForm').addEventListener('submit', e=>{
-      const n = document.getElementById('new').value;
-      const c = document.getElementById('conf').value;
-      if(n !== c){ 
+    // Password form validation
+    document.getElementById('passwordForm').addEventListener('submit', e=>{
+      const current = document.getElementById('current_password').value;
+      const newPwd = document.getElementById('new_password').value;
+      const confirm = document.getElementById('confirm_password').value;
+      
+      if (!current) {
+        e.preventDefault();
+        alert('Please enter your current password.');
+        return;
+      }
+      
+      if (newPwd !== confirm){ 
         e.preventDefault(); 
         alert('New passwords do not match.'); 
         return;
       }
-      if(n.length < 8) {
+      
+      if (newPwd.length < 8) {
         e.preventDefault();
         alert('Password must be at least 8 characters long.');
         return;
       }
     });
 
-    // Theme preference with visual feedback
-    document.getElementById('theme').addEventListener('change', e=>{
-      document.documentElement.dataset.theme = e.target.value;
-      
-      // Show success message with modern styling
-      const message = document.createElement('div');
-      message.style.cssText = `
-        position: fixed; top: 20px; right: 20px; 
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: white; padding: 12px 20px; border-radius: 12px;
-        box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
-        z-index: 10000; animation: slideIn 0.3s ease;
-      `;
-      message.innerHTML = '<i class="fas fa-check"></i> Theme preference saved!';
-      document.body.appendChild(message);
-      
+    // Auto-hide messages after 5 seconds
+    const messageEl = document.querySelector('.message');
+    if (messageEl) {
       setTimeout(() => {
-        message.style.animation = 'slideOut 0.3s ease forwards';
-        setTimeout(() => message.remove(), 300);
-      }, 2000);
-    });
+        messageEl.style.animation = 'slideOut 0.3s ease forwards';
+        setTimeout(() => messageEl.remove(), 300);
+      }, 5000);
+    }
 
-    // Add slide animations
+    // Add slide animations and message styles
     const style = document.createElement('style');
     style.textContent = `
-      @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
+      .message {
+        margin: 20px 0;
+        padding: 15px 20px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 500;
+        animation: slideIn 0.3s ease;
       }
+      
+      .message.success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        border-left: 4px solid #047857;
+      }
+      
+      .message.error {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+        border-left: 4px solid #b91c1c;
+      }
+      
+      .password-strength {
+        margin-top: 5px;
+        font-size: 12px;
+        font-weight: 500;
+      }
+      
+      .password-strength.weak {
+        color: #ef4444;
+      }
+      
+      .password-strength.medium {
+        color: #f59e0b;
+      }
+      
+      .password-strength.strong {
+        color: #10b981;
+      }
+      
+      @keyframes slideIn {
+        from { transform: translateY(-20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      
       @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
+        from { transform: translateY(0); opacity: 1; }
+        to { transform: translateY(-20px); opacity: 0; }
       }
     `;
     document.head.appendChild(style);
 
-    // Initialize
+    // Initialize avatar with current user's initials
     setInitials();
   </script>
 </body>

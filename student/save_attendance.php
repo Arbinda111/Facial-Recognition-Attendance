@@ -48,33 +48,60 @@ try {
     
     $student_db_id = $student['id'];
     
-    // Find an active session for today (simplified - you might want to make this more specific)
-    $today = date('Y-m-d');
-    $stmt = $pdo->prepare("
-        SELECT s.id 
-        FROM sessions s 
-        JOIN classes c ON s.class_id = c.id 
-        JOIN student_enrollments se ON c.id = se.class_id 
-        WHERE se.student_id = ? 
-        AND s.session_date = ? 
-        AND s.status IN ('scheduled', 'ongoing')
-        ORDER BY s.start_time ASC 
-        LIMIT 1
-    ");
-    $stmt->execute([$student_db_id, $today]);
-    $session = $stmt->fetch();
-    
-    if (!$session) {
-        // Create a general attendance session if none exists
+    // Use provided session_id if available, otherwise find an active session
+    $session_id = null;
+    if (isset($input['session_id']) && $input['session_id']) {
+        // Verify the provided session_id is valid and accessible to this student
         $stmt = $pdo->prepare("
-            INSERT INTO sessions (session_name, class_id, session_date, start_time, end_time, session_type, status, created_by) 
-            VALUES (?, 1, ?, '09:00:00', '17:00:00', 'lecture', 'ongoing', 1)
+            SELECT s.id 
+            FROM sessions s 
+            JOIN classes c ON s.class_id = c.id 
+            JOIN lecturer_student_enrollments lse ON (
+                (c.id = lse.class_id AND c.subject_id = lse.subject_id) OR
+                (lse.class_id = 0 AND c.subject_id = lse.subject_id AND c.lecturer_id = lse.lecturer_id)
+            )
+            WHERE s.id = ? 
+            AND lse.student_id = ?
+            AND s.status IN ('scheduled', 'ongoing')
         ");
-        $session_name = "General Attendance - " . date('Y-m-d');
-        $stmt->execute([$session_name, $today]);
-        $session_id = $pdo->lastInsertId();
-    } else {
-        $session_id = $session['id'];
+        $stmt->execute([$input['session_id'], $student_db_id]);
+        $session = $stmt->fetch();
+        if ($session) {
+            $session_id = $session['id'];
+        }
+    }
+    
+    // If no valid session_id provided or found, find an active session for today
+    if (!$session_id) {
+        $today = date('Y-m-d');
+        $stmt = $pdo->prepare("
+            SELECT s.id 
+            FROM sessions s 
+            JOIN classes c ON s.class_id = c.id 
+            JOIN lecturer_student_enrollments lse ON (
+                (c.id = lse.class_id AND c.subject_id = lse.subject_id) OR
+                (lse.class_id = 0 AND c.subject_id = lse.subject_id AND c.lecturer_id = lse.lecturer_id)
+            )
+            WHERE lse.student_id = ? 
+            AND s.session_date = ? 
+            AND s.status IN ('scheduled', 'ongoing')
+            ORDER BY s.start_time ASC 
+            LIMIT 1
+        ");
+        $stmt->execute([$student_db_id, $today]);
+        $session = $stmt->fetch();
+        
+        if ($session) {
+            $session_id = $session['id'];
+        }
+    }
+    
+    // If still no session found, create a general one or return error
+    if (!$session_id) {
+        // For now, return an error - we could create a general session instead
+        http_response_code(404);
+        echo json_encode(['error' => 'No active session found for attendance marking']);
+        exit();
     }
     
     // Check if attendance already marked for this session
