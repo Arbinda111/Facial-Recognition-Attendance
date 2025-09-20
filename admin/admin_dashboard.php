@@ -17,8 +17,10 @@ try {
     $stmt = $pdo->query("SELECT COUNT(*) as total FROM students WHERE status = 'active'");
     $total_students = $stmt->fetch()['total'] ?? 0;
     
-    // Today's attendance
+    // Today's attendance - include both attendance tables
     $today = date('Y-m-d');
+    
+    // Get attendance from traditional attendance table
     $stmt = $pdo->prepare("SELECT 
         COUNT(DISTINCT CASE WHEN a.status = 'present' THEN a.student_id END) as present_today,
         COUNT(DISTINCT CASE WHEN a.status = 'absent' THEN a.student_id END) as absent_today
@@ -26,21 +28,58 @@ try {
         WHERE DATE(a.attendance_time) = ?");
     $stmt->execute([$today]);
     $attendance_data = $stmt->fetch();
-    $present_today = $attendance_data['present_today'] ?? 0;
-    $absent_today = $attendance_data['absent_today'] ?? 0;
+    $present_traditional = $attendance_data['present_today'] ?? 0;
+    $absent_traditional = $attendance_data['absent_today'] ?? 0;
     
-    // Active sessions count (scheduled or ongoing)
-    $stmt = $pdo->query("SELECT COUNT(*) as active FROM sessions WHERE status IN ('scheduled', 'ongoing')");
+    // Get attendance from face recognition table
+    $stmt = $pdo->prepare("SELECT 
+        COUNT(DISTINCT CASE WHEN ar.status = 'Present' THEN ar.student_id END) as present_today,
+        COUNT(DISTINCT CASE WHEN ar.status = 'Absent' THEN ar.student_id END) as absent_today
+        FROM attendance_attendancerecord ar 
+        WHERE DATE(ar.timestamp) = ?");
+    $stmt->execute([$today]);
+    $face_attendance_data = $stmt->fetch();
+    $present_face = $face_attendance_data['present_today'] ?? 0;
+    $absent_face = $face_attendance_data['absent_today'] ?? 0;
+    
+    // Combine both sources (avoiding double counting by using DISTINCT student_id)
+    $stmt = $pdo->prepare("
+        SELECT COUNT(DISTINCT student_id) as present_count
+        FROM (
+            SELECT student_id FROM attendance 
+            WHERE DATE(attendance_time) = ? AND status = 'present'
+            UNION
+            SELECT student_id FROM attendance_attendancerecord 
+            WHERE DATE(timestamp) = ? AND status = 'Present'
+        ) as combined_present
+    ");
+    $stmt->execute([$today, $today]);
+    $present_today = $stmt->fetch()['present_count'] ?? 0;
+    
+    // Active sessions count - sessions running RIGHT NOW
+    $current_time = date('H:i:s');
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) as active 
+        FROM sessions 
+        WHERE session_date = ? 
+        AND start_time <= ? 
+        AND end_time >= ? 
+        AND status IN ('scheduled', 'ongoing')
+    ");
+    $stmt->execute([$today, $current_time, $current_time]);
     $active_sessions = $stmt->fetch()['active'] ?? 0;
     
     // Total classes count (using classes table instead of lecturers)
     $stmt = $pdo->query("SELECT COUNT(*) as total FROM classes WHERE status = 'active'");
     $total_classes = $stmt->fetch()['total'] ?? 0;
     
-    // Calculate attendance rate
-    $attendance_rate = ($present_today > 0 && ($present_today + $absent_today) > 0) 
-        ? round(($present_today / ($present_today + $absent_today)) * 100, 1) 
+    // Calculate attendance rate based on total students
+    $attendance_rate = ($total_students > 0) 
+        ? round(($present_today / $total_students) * 100, 1) 
         : 0;
+    
+    // Calculate absent students as those not present today
+    $absent_today = $total_students - $present_today;
     
     // Recent activities - simplified queries
     $recent_activities = [];
@@ -53,8 +92,23 @@ try {
     $stmt = $pdo->query("SELECT 'Session Created' as action, CONCAT('Session: ', session_name) as details, created_at as time FROM sessions ORDER BY created_at DESC LIMIT 3");
     $session_activities = $stmt->fetchAll();
     
+    // Get recent face recognition attendance
+    $stmt = $pdo->prepare("
+        SELECT 
+            'Face Attendance' as action, 
+            CONCAT('Student ID ', ar.student_id, ' marked ', ar.status, ' via face recognition') as details, 
+            ar.timestamp as time 
+        FROM attendance_attendancerecord ar 
+        JOIN students s ON ar.student_id = s.id
+        WHERE DATE(ar.timestamp) = ?
+        ORDER BY ar.timestamp DESC 
+        LIMIT 2
+    ");
+    $stmt->execute([$today]);
+    $face_attendance_activities = $stmt->fetchAll();
+    
     // Merge activities
-    $recent_activities = array_merge($student_activities, $session_activities);
+    $recent_activities = array_merge($student_activities, $session_activities, $face_attendance_activities);
     
     // Sort by time
     usort($recent_activities, function($a, $b) {
@@ -176,20 +230,6 @@ try {
                     </div>
                 </div>
                 
-                <div class="stat-card info">
-                    <div class="stat-icon">
-                        <i class="fas fa-chalkboard"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3><?php echo number_format($active_sessions); ?></h3>
-                        <p>Active Sessions</p>
-                        <div class="stat-trend">
-                            <i class="fas fa-play-circle"></i>
-                            <span>Running</span>
-                        </div>
-                    </div>
-                </div>
-                
                 <div class="stat-card secondary">
                     <div class="stat-icon">
                         <i class="fas fa-chalkboard-teacher"></i>
@@ -221,7 +261,7 @@ try {
             
             <!-- Main Content Grid -->
             <div class="content-grid">
-                <!-- Class Overview -->
+                <!-- Class Overview
                 <section class="dashboard-card class-overview">
                     <div class="card-header">
                         <h3>Class Overview</h3>
@@ -260,7 +300,30 @@ try {
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
-                </section>
+                </section> -->
+
+                            <!-- Quick Actions -->
+            <section class="quick-actions-section">
+                <h3>Quick Actions</h3>
+                <div class="action-grid">
+                    <a href="add_student.php" class="action-card">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Add Student</span>
+                    </a>
+                    <a href="add_lecturer.php" class="action-card">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                        <span>Add Lecturer</span>
+                    </a>
+                    <a href="add_session.php" class="action-card">
+                        <i class="fas fa-calendar-plus"></i>
+                        <span>Start Session</span>
+                    </a>
+                    <a href="reports.php" class="action-card">
+                        <i class="fas fa-download"></i>
+                        <span>Generate Report</span>
+                    </a>
+                </div>
+            </section>
                 
                 <!-- Recent Activities -->
                 <section class="dashboard-card recent-activities">
@@ -292,7 +355,7 @@ try {
                 </section>
             </div>
             
-            <!-- Quick Actions -->
+            <!-- Quick Actions
             <section class="quick-actions-section">
                 <h3>Quick Actions</h3>
                 <div class="action-grid">
@@ -313,7 +376,7 @@ try {
                         <span>Generate Report</span>
                     </a>
                 </div>
-            </section>
+            </section> -->
         </main>
     </div>
 </body>

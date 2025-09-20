@@ -438,29 +438,43 @@ if (isset($_GET['student_id'])) {
                     body: formData
                 });
                 
-                const result = await response.json();
+                let result;
+                try {
+                    result = await response.json();
+                } catch (jsonError) {
+                    result = { error: 'Invalid response format from API' };
+                }
                 
-                if (response.ok && result.success) {
-                    // Update database to mark face as registered
-                    const dbResponse = await fetch('update_student_face_status.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            student_id: selectedStudentId,
-                            status: 'registered'
-                        })
-                    });
-                    
-                    if (dbResponse.ok) {
-                        alert('Face registration successful for ' + selectedStudentName + '!');
-                        window.location.reload();
-                    } else {
-                        alert('Face registered but database update failed. Please contact admin.');
+                // Check if the API call was successful based on HTTP status
+                if (response.ok) {
+                    // API call succeeded - now update database
+                    try {
+                        const dbResponse = await fetch('update_student_face_status.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                student_id: selectedStudentId,
+                                status: 'registered'
+                            })
+                        });
+                        
+                        if (dbResponse.ok) {
+                            alert('Face registration successful for ' + selectedStudentName + '!\n\nAPI Response: ' + (result.message || 'Registration completed successfully.'));
+                            window.location.reload();
+                        } else {
+                            const dbResult = await dbResponse.text();
+                            alert('Face registered successfully with API, but database update failed.\n\nAPI Success: ' + (result.message || 'Face data processed') + '\nDB Error: ' + dbResult + '\n\nPlease contact admin to update the database status.');
+                        }
+                    } catch (dbError) {
+                        alert('Face registered successfully with API, but database update failed.\n\nAPI Success: ' + (result.message || 'Face data processed') + '\nDB Error: ' + dbError.message + '\n\nPlease contact admin.');
                     }
                 } else {
-                    alert('Face registration failed: ' + (result.error || result.message || 'Unknown error'));
+                    // API call failed
+                    const errorMessage = result.error || result.detail || result.message || `HTTP ${response.status}: ${response.statusText}`;
+                    alert('Face registration failed.\n\nError: ' + errorMessage + '\n\nPlease try again or contact support.');
+                    console.error('API Error:', result);
                 }
             } catch (error) {
                 alert('Network error: ' + error.message);

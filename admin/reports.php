@@ -29,20 +29,16 @@ try {
     $stmt = $pdo->query("SELECT COUNT(*) as total_classes FROM classes WHERE status = 'active'");
     $attendance_stats['total_classes'] = $stmt->fetch()['total_classes'];
     
-    // Present students count
-    $stmt = $pdo->query("SELECT COUNT(*) as present_count FROM attendance WHERE status = 'present'");
+    // Present students count - using attendance_student table
+    $stmt = $pdo->query("SELECT COUNT(*) as present_count FROM attendance_student WHERE 1");
     $attendance_stats['present_count'] = $stmt->fetch()['present_count'];
     
-    // Total attendance records
-    $stmt = $pdo->query("SELECT COUNT(*) as total_attendance FROM attendance");
+    // Total attendance records - using attendance_student table  
+    $stmt = $pdo->query("SELECT COUNT(*) as total_attendance FROM attendance_student");
     $total_attendance = $stmt->fetch()['total_attendance'];
     
-    // Calculate attendance percentage
-    if ($total_attendance > 0) {
-        $attendance_stats['attendance_percentage'] = round(($attendance_stats['present_count'] / $total_attendance) * 100, 1);
-    } else {
-        $attendance_stats['attendance_percentage'] = 0;
-    }
+    // Calculate attendance percentage (assuming all records in attendance_student are 'present')
+    $attendance_stats['attendance_percentage'] = $total_attendance > 0 ? 100 : 0;
     
 } catch (PDOException $e) {
     $error_message = 'Error fetching statistics: ' . $e->getMessage();
@@ -62,23 +58,19 @@ try {
         SELECT 
             c.class_name,
             c.class_code,
-            c.instructor_name,
-            COUNT(DISTINCT se.student_id) as enrolled_students,
+            COALESCE(l.name, c.instructor_name) as instructor_name,
+            COUNT(DISTINCT lse.student_id) as enrolled_students,
             COUNT(DISTINCT s.id) as total_sessions,
-            COUNT(DISTINCT a.id) as total_attendance,
-            COUNT(DISTINCT CASE WHEN a.status = 'present' THEN a.id END) as present_count,
-            CASE 
-                WHEN COUNT(DISTINCT a.id) > 0 
-                THEN ROUND((COUNT(DISTINCT CASE WHEN a.status = 'present' THEN a.id END) / COUNT(DISTINCT a.id)) * 100, 1)
-                ELSE 0 
-            END as attendance_percentage
+            0 as total_attendance,
+            0 as present_count,
+            0 as attendance_percentage
         FROM classes c
-        LEFT JOIN student_enrollments se ON c.id = se.class_id AND se.status = 'enrolled'
+        LEFT JOIN lecturers l ON c.lecturer_id = l.id
+        LEFT JOIN lecturer_student_enrollments lse ON c.lecturer_id = lse.lecturer_id
         LEFT JOIN sessions s ON c.id = s.class_id
-        LEFT JOIN attendance a ON s.id = a.session_id
         WHERE c.status = 'active'
-        GROUP BY c.id
-        ORDER BY attendance_percentage DESC
+        GROUP BY c.id, c.class_name, c.class_code, l.name, c.instructor_name
+        ORDER BY enrolled_students DESC, c.class_name ASC
     ");
     $class_reports = $stmt->fetchAll();
 } catch (PDOException $e) {
@@ -138,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['export_report'])) {
             
             <!-- Attendance Statistics -->
             <section class="stats-grid">
-                <div class="stat-card primary">
+                <!-- <div class="stat-card primary">
                     <div class="stat-icon">
                         <i class="fas fa-percentage"></i>
                     </div>
@@ -146,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['export_report'])) {
                         <h3><?php echo $attendance_stats['attendance_percentage']; ?>%</h3>
                         <p>Overall Attendance</p>
                     </div>
-                </div>
+                </div> -->
                 
                 <div class="stat-card success">
                     <div class="stat-icon">
@@ -201,7 +193,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['export_report'])) {
                                     <th>Instructor</th>
                                     <th>Students</th>
                                     <th>Sessions</th>
-                                    <th>Attendance Rate</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -230,19 +221,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['export_report'])) {
                                             <i class="fas fa-calendar"></i>
                                             <?php echo $report['total_sessions']; ?> sessions
                                         </span>
-                                    </td>
-                                    <td>
-                                        <div class="attendance-display">
-                                            <div class="attendance-percentage">
-                                                <strong><?php echo $report['attendance_percentage']; ?>%</strong>
-                                            </div>
-                                            <div class="attendance-bar">
-                                                <div class="attendance-fill" style="width: <?php echo $report['attendance_percentage']; ?>%"></div>
-                                            </div>
-                                            <small class="attendance-details">
-                                                <?php echo $report['present_count']; ?> / <?php echo $report['total_attendance']; ?> present
-                                            </small>
-                                        </div>
                                     </td>
                                    
                                 </tr>

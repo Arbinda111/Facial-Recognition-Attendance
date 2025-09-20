@@ -73,25 +73,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assign_subject'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enroll_students'])) {
     $subject_id = intval($_POST['subject_id']);
     $student_ids = $_POST['student_ids'] ?? [];
-    // Find the lecturer assigned to this subject
-    $lecturer_stmt = $conn->prepare("SELECT lecturer_id FROM lecturer_subjects WHERE subject_id = ? LIMIT 1");
-    $lecturer_stmt->bind_param('i', $subject_id);
-    $lecturer_stmt->execute();
-    $lecturer_stmt->bind_result($lecturer_id);
-    $lecturer_found = $lecturer_stmt->fetch();
-    $lecturer_stmt->close();
+    
+    if (empty($student_ids)) {
+        $subject_error = 'Please select at least one student to enroll.';
+    } else {
+        // Find the lecturer assigned to this subject
+        $lecturer_stmt = $conn->prepare("SELECT lecturer_id FROM lecturer_subjects WHERE subject_id = ? LIMIT 1");
+        $lecturer_stmt->bind_param('i', $subject_id);
+        $lecturer_stmt->execute();
+        $lecturer_stmt->bind_result($lecturer_id);
+        $lecturer_found = $lecturer_stmt->fetch();
+        $lecturer_stmt->close();
 
-    foreach ($student_ids as $sid) {
-        $sid = intval($sid);
-        // Insert into lecturer_student_enrollments (no class_id used)
-        if ($lecturer_found && $lecturer_id) {
-            $lse_stmt = $conn->prepare("INSERT IGNORE INTO lecturer_student_enrollments (lecturer_id, student_id, subject_id) VALUES (?, ?, ?)");
-            $lse_stmt->bind_param('iii', $lecturer_id, $sid, $subject_id);
-            $lse_stmt->execute();
-            $lse_stmt->close();
+        $enrolled_count = 0;
+        foreach ($student_ids as $sid) {
+            $sid = intval($sid);
+            // Insert into lecturer_student_enrollments (no class_id used)
+            if ($lecturer_found && $lecturer_id) {
+                $lse_stmt = $conn->prepare("INSERT IGNORE INTO lecturer_student_enrollments (lecturer_id, student_id, subject_id) VALUES (?, ?, ?)");
+                $lse_stmt->bind_param('iii', $lecturer_id, $sid, $subject_id);
+                if ($lse_stmt->execute()) {
+                    $enrolled_count++;
+                }
+                $lse_stmt->close();
+            }
+        }
+        
+        if ($enrolled_count > 0) {
+            $subject_success = "Successfully enrolled $enrolled_count student(s) to the subject!";
+        } else {
+            $subject_error = 'No students were enrolled. They may already be enrolled in this subject.';
         }
     }
-    $success = 'Students enrolled to subject.';
 }
 
 $conn->close();
@@ -112,10 +125,16 @@ $conn->close();
                 <div class="header-left">
                     <h1>Subject Assignment</h1>
                     <p>Assign and manage subjects for lecturers and students</p>
-                    <?php if (!empty($success_message)): ?>
-                        <div class="alert alert-success">
+                    <?php if (!empty($subject_success)): ?>
+                        <div class="alert alert-success" style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 12px; border-radius: 8px; margin-top: 15px;">
                             <i class="fas fa-check-circle"></i>
-                            <?php echo $success_message; ?>
+                            <?php echo htmlspecialchars($subject_success); ?>
+                        </div>
+                    <?php endif; ?>
+                    <?php if (!empty($subject_error)): ?>
+                        <div class="alert alert-error" style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 12px; border-radius: 8px; margin-top: 15px;">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <?php echo htmlspecialchars($subject_error); ?>
                         </div>
                     <?php endif; ?>
                     <?php if (!empty($error_message)): ?>

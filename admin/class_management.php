@@ -229,7 +229,7 @@ $active_classes = count(array_filter($classes, function($class) { return $class[
                     </div>
                 </div>
                 
-                <div class="stat-card success">
+                <!-- <div class="stat-card success">
                     <div class="stat-icon">
                         <i class="fas fa-user-graduate"></i>
                     </div>
@@ -237,7 +237,7 @@ $active_classes = count(array_filter($classes, function($class) { return $class[
                         <h3><?php echo $total_enrolled; ?></h3>
                         <p>Enrolled Students</p>
                     </div>
-                </div>
+                </div> -->
                 
                 <div class="stat-card info">
                     <div class="stat-icon">

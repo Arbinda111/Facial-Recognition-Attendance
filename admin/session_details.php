@@ -101,21 +101,9 @@ if (!$session) {
                             <label>Instructor:</label>
                             <span><?php echo htmlspecialchars($session['instructor_name']); ?></span>
                         </div>
-                        <div class="detail-item">
-                            <label>Enrolled Students:</label>
-                            <span><?php echo $session['enrolled_students']; ?> students</span>
-                        </div>
+                        
                     </div>
-                    <div class="session-actions">
-                        <a href="edit_session.php?id=<?php echo $session['id']; ?>" class="btn-primary">
-                            <i class="fas fa-edit"></i>
-                            Edit Session
-                        </a>
-                        <a href="attendance.php?session_id=<?php echo $session['id']; ?>" class="btn-success">
-                            <i class="fas fa-user-check"></i>
-                            Take Attendance
-                        </a>
-                    </div>
+                    
                 </div>
             </div>
         </main>

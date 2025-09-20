@@ -721,10 +721,6 @@ $total_pages = ceil($total_students / $per_page);
                     <h3><?php echo isset($students) ? count(array_filter($students, function($s) { return isset($s['enrolled_classes']) && $s['enrolled_classes'] > 0; })) : 0; ?></h3>
                     <p>Enrolled Students</p>
                 </div>
-                <div class="stat-card" style="--accent-color: #9f7aea;">
-                    <h3><?php echo $total_students; ?></h3>
-                    <p>Total Students</p>
-                </div>
             </div>
             
             <!-- Search and Filters -->
@@ -781,8 +777,6 @@ $total_pages = ceil($total_students / $per_page);
                                     <th>Student</th>
                                     <th>Student ID</th>
                                     <th>Contact</th>
-                                    <th>Classes</th>
-                                    <th>Attendance</th>
                                     <th>Status</th>
                                     <th>Registered</th>
                                     <th>Actions</th>
@@ -821,21 +815,6 @@ $total_pages = ceil($total_students / $per_page);
                                     </td>
                                     <td><?php echo htmlspecialchars($student['contact'] ?? 'N/A'); ?></td>
                                     <td>
-                                        <span class="badge"><?php echo $student['enrolled_classes']; ?> classes</span>
-                                    </td>
-                                    <td>
-                                        <div class="attendance-info">
-                                            <div class="attendance-bar">
-                                                <?php 
-                                                $percentage = (float)($student['attendance_percentage'] ?? 0);
-                                                $color_class = $percentage >= 80 ? 'attendance-good' : ($percentage >= 60 ? 'attendance-warning' : 'attendance-poor');
-                                                ?>
-                                                <div class="attendance-fill <?php echo $color_class; ?>" style="width: <?php echo $percentage; ?>%"></div>
-                                            </div>
-                                            <small><?php echo number_format($percentage, 1); ?>%</small>
-                                        </div>
-                                    </td>
-                                    <td>
                                         <span class="status-badge <?php echo strtolower($student['status']); ?>" 
                                               onclick="toggleStatus(<?php echo $student['id']; ?>, '<?php echo $student['status']; ?>')" 
                                               style="cursor: pointer;" title="Click to toggle status">
@@ -847,12 +826,12 @@ $total_pages = ceil($total_students / $per_page);
                                     </td>
                                     <td>
                                         <div class="action-buttons">
-                                            <button class="btn-icon" title="View Profile" onclick="viewStudent(<?php echo $student['id']; ?>)">
+                                            <!-- <button class="btn-icon" title="View Profile" onclick="viewStudent(<?php echo $student['id']; ?>)">
                                                 <i class="fas fa-eye"></i>
-                                            </button>
-                                            <button class="btn-icon" title="Edit Student" onclick="editStudent(<?php echo $student['id']; ?>)">
+                                            </button> -->
+                                            <!-- <button class="btn-icon" title="Edit Student" onclick="editStudent(<?php echo $student['id']; ?>)">
                                                 <i class="fas fa-edit"></i>
-                                            </button>
+                                            </button> -->
                                             <button class="btn-icon danger" title="Delete Student" onclick="deleteStudent(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['name']); ?>')">
                                                 <i class="fas fa-trash"></i>
                                             </button>
