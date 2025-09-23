@@ -2,15 +2,12 @@
 
 ## Prerequisites
 
-- XAMPP installed and running
 - MySQL server running on localhost:3306
 - Username: root, Password: root
 
 ## Installation Steps
 
-1. **Start XAMPP Services**
-
-   - Start Apache and MySQL services from XAMPP Control Panel
+1. **Start MYSQL Services**
 
 2. **Run Database Setup**
 
@@ -26,7 +23,7 @@
 
    - URL: `http://localhost/AI_Face_recog_with_AutoAttendance/admin/admin_login.php`
    - Username: `admin`
-   - Password: `admin123`
+   - Password: `password`
 
    **Student Login:**
 
@@ -56,16 +53,9 @@
 6. ✅ Session management
 7. ✅ Password hashing for security
 
-## Next Steps:
-
-1. Add class management functionality
-2. Implement session creation
-3. Add attendance marking system
-4. Integrate face recognition
-5. Generate reports
-
 ## Troubleshooting:
 
 - If you get "Database connection failed", check MySQL is running
 - If tables aren't created, run the install.php script again
 - Check XAMPP error logs for detailed error information
+
