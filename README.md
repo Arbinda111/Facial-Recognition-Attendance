@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - MySQL server running on localhost:3306
-- Username: root, Password: root
+- Username: root, Password: newpassword
 
 ## Installation Steps
 
@@ -58,4 +58,5 @@
 - If you get "Database connection failed", check MySQL is running
 - If tables aren't created, run the install.php script again
 - Check XAMPP error logs for detailed error information
+
 
