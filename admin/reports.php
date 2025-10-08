@@ -92,6 +92,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['export_report'])) {
     <title>Reports - Full Attend</title>
     <link rel="stylesheet" href="admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
     <div class="admin-container">
@@ -177,6 +179,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['export_report'])) {
                     <div class="card-header">
                         <h3><i class="fas fa-chart-bar"></i> Class-wise Attendance Report</h3>
                         <div class="header-actions">
+                            <button class="btn-primary" onclick="exportToPDF()">
+                                <i class="fas fa-download"></i>
+                                Download PDF
+                            </button>
                             <button class="btn-secondary" onclick="window.location.reload()">
                                 <i class="fas fa-refresh"></i>
                                 Refresh
@@ -241,6 +247,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['export_report'])) {
     </div>
 
     <script>
+        // Export report to PDF
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Add header
+            doc.setFontSize(20);
+            doc.setTextColor(40);
+            doc.text('FullAttend - Class-wise Attendance Report', 20, 20);
+            
+            // Add date
+            doc.setFontSize(12);
+            doc.setTextColor(100);
+            doc.text('Generated on: ' + new Date().toLocaleDateString(), 20, 32);
+            
+            // Prepare table data
+            const tableData = [];
+            <?php foreach ($class_reports as $report): ?>
+            tableData.push([
+                '<?php echo htmlspecialchars($report['class_name']); ?>',
+                '<?php echo htmlspecialchars($report['class_code']); ?>',
+                '<?php echo htmlspecialchars($report['instructor_name']); ?>',
+                '<?php echo $report['enrolled_students']; ?>',
+                '<?php echo $report['total_sessions']; ?>'
+            ]);
+            <?php endforeach; ?>
+            
+            // Add table (moved up - startY reduced from 80 to 45)
+            doc.autoTable({
+                head: [['Class Name', 'Class Code', 'Instructor', 'Enrolled Students', 'Sessions']],
+                body: tableData,
+                startY: 45,
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 3,
+                },
+                headStyles: {
+                    fillColor: [102, 143, 245],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold'
+                },
+                alternateRowStyles: {
+                    fillColor: [245, 245, 245]
+                },
+                margin: { top: 45 }
+            });
+            
+            // Add footer
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.text('FullAttend System - Page ' + i + ' of ' + pageCount, 20, doc.internal.pageSize.height - 10);
+                doc.text('Generated on <?php echo date('Y-m-d H:i:s'); ?>', doc.internal.pageSize.width - 60, doc.internal.pageSize.height - 10);
+            }
+            
+            // Save the PDF
+            doc.save('FullAttend_Class_Report_' + new Date().toISOString().split('T')[0] + '.pdf');
+        }
+        
         // View class report details
         function viewClassReport(classCode) {
             window.location.href = `class_report_details.php?code=${classCode}`;
@@ -296,5 +363,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['export_report'])) {
             });
         });
     </script>
+    
+    <style>
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 10px;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
 </body>
 </html>
