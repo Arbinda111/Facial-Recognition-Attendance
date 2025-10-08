@@ -556,7 +556,7 @@ if (isset($_GET['check_active_session']) && isset($_SERVER['HTTP_X_REQUESTED_WIT
         }
         
         .btn-danger {
-            background: #dc3545;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
             color: white;
             border: none;
             padding: 12px 25px;
@@ -564,6 +564,32 @@ if (isset($_GET['check_active_session']) && isset($_SERVER['HTTP_X_REQUESTED_WIT
             font-weight: 600;
             cursor: pointer;
             margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        }
+        
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            color: #212529;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+        }
+        
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 193, 7, 0.4);
+            background: linear-gradient(135deg, #ffcd39 0%, #ffc107 100%);
         }
         
         .message {
@@ -745,8 +771,11 @@ if (isset($_GET['check_active_session']) && isset($_SERVER['HTTP_X_REQUESTED_WIT
                                     <button onclick="stopAutoCapture()" class="btn-danger">
                                         <i class="fas fa-stop"></i> Stop Attendance
                                     </button>
-                                    <button onclick="endCurrentSession()" class="btn-warning" style="margin-left: 10px;">
+                                    <button onclick="endCurrentSession()" class="btn-warning">
                                         <i class="fas fa-times-circle"></i> End Session
+                                    </button>
+                                    <button onclick="clearAllResults()" class="cancel-btn" style="margin-left: 10px;">
+                                        <i class="fas fa-broom"></i> Clear Results
                                     </button>
                                 </div>
                             </div>
@@ -761,9 +790,9 @@ if (isset($_GET['check_active_session']) && isset($_SERVER['HTTP_X_REQUESTED_WIT
                                 <div id="attendanceInstructions" style="margin-top: 15px; padding: 15px; background: #e8f4f8; border-radius: 10px; font-size: 14px;">
                                     <i class="fas fa-info-circle"></i> <strong>How it works:</strong><br>
                                     • Click "Start Auto-Attendance" to begin<br>
-                                    • System will automatically detect and confirm one student<br>
-                                    • Auto-attendance stops after each confirmation<br>
-                                    • Click the button again for the next student
+                                    • System will continuously detect and record student attendance<br>
+                                    • Each student's details will appear below when marked<br>
+                                    • Use "Stop Attendance" button to end the session manually
                                 </div>
                             </div>
                             
@@ -793,6 +822,9 @@ if (isset($_GET['check_active_session']) && isset($_SERVER['HTTP_X_REQUESTED_WIT
                                     </div>
                                     <button onclick="stopAutoCapture()" class="btn-danger">
                                         <i class="fas fa-stop"></i> Stop Attendance
+                                    </button>
+                                    <button onclick="clearAllResults()" class="cancel-btn" style="margin-left: 10px;">
+                                        <i class="fas fa-broom"></i> Clear Results
                                     </button>
                                 </div>
                             </div>
@@ -1192,14 +1224,18 @@ if (isset($_GET['check_active_session']) && isset($_SERVER['HTTP_X_REQUESTED_WIT
                             saveAttendanceToDatabase(unified);
                         }
 
-                        // Pause auto-capture when student is detected (don't stop camera)
-                        pauseAutoCapture();
+                        // Continue auto-capture immediately without pausing
+                        console.log('Attendance marked for', unified.student_name, '- continuing auto-capture for next student');
                         
-                        // Update status to show attendance completed
-                        const autoMessage = document.getElementById('autoMessage');
-                        if (autoMessage) {
-                            autoMessage.innerHTML = `✅ Attendance recorded for <strong>${isValidStudent.student_name}</strong> - Use buttons below to continue`;
-                        }
+                        // Update status to show system is ready for next student after brief delay
+                        setTimeout(() => {
+                            const autoMessage = document.getElementById('autoMessage');
+                            if (autoMessage && isAutoCapturing) {
+                                autoMessage.innerHTML = currentSession ? 
+                                    `🔄 Ready for next student in <strong>${currentSession.session_name}</strong>...` :
+                                    '🔄 Ready for next student...';
+                            }
+                        }, 2000); // Show success message for 2 seconds, then continue
                     } else {
                         // Student not enrolled under current lecturer - don't show success
                         document.getElementById('autoMessage').textContent = 
@@ -1306,14 +1342,10 @@ if (isset($_GET['check_active_session']) && isset($_SERVER['HTTP_X_REQUESTED_WIT
                         <p><strong>Time:</strong> ${timestamp}</p>
                         ${result.message ? `<p><strong>Status:</strong> ${result.message}</p>` : ''}
                     </div>
-                    <div class="next-student-actions" style="margin-top: 20px; text-align: center; padding: 15px; background: #f8f9fa; border-radius: 10px;">
-                        <p style="margin-bottom: 15px; font-weight: 600; color: #495057;">
-                            <i class="fas fa-users"></i> Ready for next student?
+                    <div class="auto-continue-info" style="margin-top: 15px; text-align: center; padding: 10px; background: #e8f5e8; border-radius: 8px; border-left: 4px solid #28a745;">
+                        <p style="margin: 0; font-weight: 600; color: #155724;">
+                            <i class="fas fa-sync-alt"></i> System automatically continuing for next student...
                         </p>
-                       
-                        <button onclick="clearAllResults()" class="cancel-btn" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); margin-right: 10px;">
-                            <i class="fas fa-broom"></i> Take Attendance for Next Student
-                        </button>
                     </div>
                 </div>
             `;
@@ -1374,56 +1406,6 @@ if (isset($_GET['check_active_session']) && isset($_SERVER['HTTP_X_REQUESTED_WIT
                 clearInterval(newSessionCheckInterval);
             }
         });
-
-        // Function to retake attendance for next student
-        function retakeAttendanceForNextStudent() {
-            console.log('Starting attendance for next student...');
-            
-            // Hide any error messages and clear status
-            const messageArea = document.getElementById('messageArea');
-            if (messageArea) messageArea.innerHTML = '';
-            
-            // Check if camera is still running (video element has a stream)
-            const video = document.getElementById('autoWebcam');
-            const hasActiveStream = video && video.srcObject && video.srcObject.active;
-            
-            if (hasActiveStream) {
-                // Camera is still running, just resume auto-capture
-                console.log('Camera stream active, resuming auto-capture...');
-                resumeAutoCapture();
-            } else {
-                // Camera not running, need to restart
-                console.log('No active camera stream, restarting camera...');
-                
-                // First, stop any current capture without showing start section
-                stopAutoCapture(true);
-                
-                // Small delay to ensure camera is properly stopped
-                setTimeout(function() {
-                    // If there's a current session, start camera directly
-                    if (currentSession) {
-                        // Show camera section immediately
-                        const startCaptureDiv = document.getElementById('startCapture');
-                        const autoCaptureSection = document.getElementById('autoCaptureSection');
-                        
-                        if (startCaptureDiv) {
-                            startCaptureDiv.style.display = 'none';
-                        }
-                        if (autoCaptureSection) {
-                            autoCaptureSection.style.display = 'block';
-                        }
-                        
-                        // Start camera immediately
-                        setTimeout(function() {
-                            startDirectCamera();
-                        }, 300);
-                    } else {
-                        // No current session, use manual mode
-                        startAutoCapture();
-                    }
-                }, 500);
-            }
-        }
 
         // Function to clear all attendance results
         function clearAllResults() {
